@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TetraVilla</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        .navbar {
+            background-color: #f5f1f1;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar .logo {
+            font-size: 18px;
+            font-weight: bold;
+            color: rgb(0, 0, 0);
+            text-decoration: none;
+        }
+
+        .navbar ul {
+            list-style: none;
+            display: flex;
+            gap: 20px;
+        }
+
+        .navbar ul li {
+            display: inline;
+        }
+
+        .navbar ul li a {
+            color: rgb(0, 0, 0);
+            text-decoration: none;
+            font-size: 15px;
+            padding: 8px 12px;
+            transition: 0.3s;
+        }
+
+        .navbar ul li a:hover {
+            background-color: #34495e;
+            border-radius: 5px;
+            color: white;
+        }
+
+        .content {
+            max-width: 800px;
+            margin: 29px auto;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .gallery {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .img-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: #d7c3c3;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgb(227, 197, 197);
+            max-width: 300px;
+            text-align: center;
+        }
+
+        .img-container img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgb(227, 197, 197);
+        }
+
+        .img-description {
+            margin-top: 15px;
+            color: white;
+            font-size: 16px;
+            text-align: center;
+        }
+        
+        .footer {
+            background-color: #d0c7c7;
+            color: rgb(0, 0, 0);
+            padding: 30px 0;
+            text-align: center;
+        }
+
+        .footer-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            max-width: 1100px;
+            margin: auto;
+        }
+
+        .footer-section {
+            flex: 1;
+            min-width: 250px;
+            margin: 10px;
+        }
+
+        .footer-section h3 {
+            margin-bottom: 15px;
+            font-size: 18px;
+            border-bottom: 2px solid #f5f1f1;
+            display: inline-block;
+            padding-bottom: 5px;
+        }
+
+        .footer-section p, .footer-section ul {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .footer-section ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .footer-section ul li {
+            margin-bottom: 8px;
+        }
+
+        .footer-section ul li a {
+            text-decoration: none;
+            color: #2a2929;
+            transition: color 0.3s;
+        }
+
+        .footer-section ul li a:hover {
+            color: #1abc9c;
+        }
+
+        .social-icons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .social-icons a img {
+            width: 30px;
+            height: 30px;
+            transition: transform 0.3s;
+        }
+
+        .social-icons a img:hover {
+            transform: scale(1.2);
+        }
+
+        .footer-bottom {
+            margin-top: 20px;
+            font-size: 13px;
+            padding-top: 10px;
+            border-top: 1px solid #444;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 300px;
+            text-align: center;
+        }
+
+        .close {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            cursor: pointer;
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="#" class="logo">TetraVilla</a>
+        <ul>
+            <li><a href="login.html">Se Connecter</a></li>
+            <li><a href="#" id="afficherNumero">Tel</a></li>
+            <li><a href="#" id="ouvrirModal">Réserver</a></li>
+        </ul>
+    </nav>
+
+    <p id="numeroTel" style="display: none;">
+        <a href="tel:+212600112233">+212 600 112233</a>
+    </p>
+
+    <!-- Fenêtre modale -->
+    <div id="modalReservation" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>Formulaire de Réservation</h3>
+            <form>
+                <label for="nom"> Date D'arrivée:</label>
+                <input type="date" id="nom" required><br><br>
+
+                <label for="date"> Date Depart :</label>
+                <input type="date" id="date" required><br><br>
+
+                <label for="nbrPersonne"> Nombre Personnes :</label>
+                <input type="number" id="nbrPersonne" required><br><br>
+
+                <label for="typechambre"> Type Chambre :</label>
+                <select name="typechambre" id="typechambre" required>
+                    <option value="simple">Chambre Simple</option>
+                    <option value="double">Chambre Double</option>
+                    <option value="suite">Suite Prestige</option>
+                </select><br><br>
+    
+                <button type="submit" onclick="">Vérifier disponibilité</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let modal = document.getElementById("modalReservation");
+        let btn = document.getElementById("ouvrirModal");
+        let span = document.getElementsByClassName("close")[0];
+    
+        btn.onclick = function(event) {
+            event.preventDefault();
+            modal.style.display = "flex";
+        };
+    
+        span.onclick = function() {
+            modal.style.display = "none";
+        };
+    
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        };
+
+        document.getElementById("afficherNumero").addEventListener("click", function(event) {
+            event.preventDefault(); 
+            document.getElementById("numeroTel").style.display = "block"; 
+            // Ne pas cacher le bouton, donc cette ligne est supprimée.
+        });
+
+
+       // Classe Chambre
+       class Chambre {
+            constructor(type, capacite, prix) {
+                this.type = type;
+                this.capacite = capacite;
+                this.prix = prix;
+            }
+
+            // Méthode pour afficher les détails d'une chambre
+            afficherDetail(dateArrivee, dateDepart) {
+                // Vérifier la disponibilité (en simplifiant, on suppose que toutes les chambres sont disponibles pour la démonstration)
+                if (this.estDisponible(dateArrivee, dateDepart)) {
+                    return `Chambre ${this.type.charAt(0).toUpperCase() + this.type.slice(1)}\nCapacité: ${this.capacite} personnes\nPrix par nuit: ${this.prix}€\nDisponible du ${dateArrivee} au ${dateDepart}`;
+                } else {
+                    return `La chambre ${this.type} n'est pas disponible pour les dates sélectionnées.`;
+                }
+            }
+
+            // Méthode pour vérifier si une chambre est disponible
+            estDisponible(dateArrivee, dateDepart) {
+                // Ici, tu peux implémenter une logique de vérification avec un tableau ou une base de données
+                // Pour cet exemple, on suppose que toutes les chambres sont disponibles
+                return true;  // Toutes les chambres sont considérées comme disponibles
+            }
+        }
+
+        // Fonction pour vérifier la disponibilité et affecter une chambre
+        function verifierDisponibilite(event) {
+            event.preventDefault(); // Empêche l'envoi du formulaire par défaut
+
+            // Récupérer les valeurs saisies dans le formulaire
+            const dateArrivee = document.getElementById('nom').value;
+            const dateDepart = document.getElementById('date').value;
+            const nbrPersonne = parseInt(document.getElementById('nbrPersonne').value);
+            const typeChambre = document.getElementById('typechambre').value;
+
+            // Définir les chambres disponibles
+            const chambreSimple = new Chambre("simple", 2, 80, 1);
+            const chambreDouble = new Chambre("double", 4, 120, 2);
+            const chambreSuite = new Chambre("suite", 6, 200, 3);
+
+            let message = '';
+
+            // Vérifier le type de chambre et le nombre de personnes
+            let chambreAttribuee = null;
+            if (typeChambre === 'simple' && nbrPersonne <= chambreSimple.capacite) {
+                chambreAttribuee = chambreSimple;
+            } else if (typeChambre === 'double' && nbrPersonne <= chambreDouble.capacite) {
+                chambreAttribuee = chambreDouble;
+            } else if (typeChambre === 'suite' && nbrPersonne <= chambreSuite.capacite) {
+                chambreAttribuee = chambreSuite;
+            } else {
+                message = 'Le nombre de personnes dépasse la capacité maximale de la chambre choisie.';
+            }
+
+            // Si une chambre est attribuée, vérifier la disponibilité et afficher les détails
+            if (chambreAttribuee) {
+                message = chambreAttribuee.afficherDetail(dateArrivee, dateDepart);
+            }
+
+            // Afficher le message à l'utilisateur
+            alert(message);
+
+        }
+    </script>
+    <div>
+        <h1 style="text-align: center; margin-top: 20px;">TetraVilla - L'Art de l'Hospitalité</h1>
+    </div>
+
+    <div class="content">
+        Offrant une alliance parfaite entre élégance contemporaine et confort absolu,
+        TetraVilla vous invite à vivre une expérience unique. Chaque chambre et suite,
+        pensée dans les moindres détails, allie design moderne et atmosphère apaisante pour vous garantir un séjour des plus agréables. 
+        Que vous soyez en déplacement professionnel ou en quête d'évasion,
+        notre établissement vous promet un accueil chaleureux et des prestations de qualité pour répondre à toutes vos attentes.
+    </div>
+
+    <div class="gallery">
+        <div class="img-container">
+            <img src="/img/hotel1.jpeg" alt="TetraVilla Vue 1">
+            <p class="img-description">
+                Idéale pour les voyageurs en solo ou les séjours d'affaires, notre chambre simple offre un espace fonctionnel et chaleureux.
+                 Profitez d’un lit douillet, d’une décoration moderne et de toutes les commodités essentielles pour un séjour agréable.
+            </p>
+        </div>
+
+        <div class="img-container">
+            <img src="/img/hotel2.jpg" alt="TetraVilla Vue 2">
+            <p class="img-description">
+                Spacieuse et soigneusement aménagée, notre chambre double est parfaite pour les couples ou les amis en quête de confort.
+                 Son ambiance cosy et son mobilier raffiné vous garantissent des moments de détente inoubliables.
+            </p>
+        </div>
+
+        <div class="img-container">  
+            <img src="/img/hotel3.jpg" alt="TetraVilla Vue 3">
+            <p class="img-description">
+                Offrez-vous une expérience unique dans notre Suite Prestige, où chaque détail est pensé pour votre bien-être.
+                 Profitez d’un espace généreux, d’un coin salon élégant et d’équipements haut de gamme pour un séjour inoubliable.
+            </p>
+        </div>    
+    </div>
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-section">
+                <h3>TetraVilla</h3>
+                <p>Votre destination idéale pour un séjour inoubliable.</p>
+            </div>
+    
+            <div class="footer-section">
+                <h3>Contact</h3>
+                <p>📍 Adresse : Tanger, Maroc</p>
+                <p>📞 Téléphone : +212 600 000 000</p>
+                <p>✉️ Email : contact@tetravilla.com</p>
+            </div>
+    
+            <div class="footer-section">
+                <h3>Liens rapides</h3>
+                <ul>
+                    <li><a href="login.html">Se connecter</a></li>
+                    <li><a href="#">Tel</a></li>
+                    <li><a href="#">Réserver</a></li>
+                </ul>
+            </div>
+    
+            <div class="footer-section">
+                <h3>Suivez-nous</h3>
+                <div class="social-icons">
+                    <a href="#"><img src="https://cdn-icons-png.flaticon.com/512/1384/1384053.png" alt="Facebook"></a>
+                    <a href="#"><img src="https://cdn-icons-png.flaticon.com/512/1384/1384063.png" alt="Instagram"></a>
+                    <a href="#"><img src="https://cdn-icons-png.flaticon.com/512/1384/1384060.png" alt="Twitter"></a>
+                </div>
+            </div>
+        </div>
+    
+        <div class="footer-bottom">
+            &copy; 2025 TetraVilla | Tous droits réservés.
+        </div>
+    </footer>
+    
+</body>
+</html>
+
