@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Finance Dashboard - TetraVilla</title>
+    <title>RH Dashboard - TetraVilla</title>
     <link rel="stylesheet" href="admin_finance_styles.css">
 </head>
 <body>
@@ -11,13 +11,13 @@
         <!-- Sidebar -->
         <div class="sidebar">
             <div class="sidebar-header">
-                <img src="/img/RHpic.jpg" alt="Admin Photo" class="admin-photo">
-                <h2>Admin</h2>
+                <img src="RHpic.jpg" alt="Admin Photo" class="admin-photo">
+                <h2>RH</h2>
             </div>
             <ul class="sidebar-menu">
-                <li><a href="#budget">Budget Total</a></li>
-                <li><a href="#distribution">Distribution de Monnaie</a></li>
-                <li><a href="#rapport">Rapport</a></li>
+                <li><a href="#">Gérer Employés</a></li>
+                <li><a href="#">Gérer Demandes</a></li>
+                <li><a href="#">Se déconnecter</a></li>
             </ul>
         </div>
 
