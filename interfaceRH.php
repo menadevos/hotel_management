@@ -1,3 +1,35 @@
+<?php 
+include 'dbconfig.php';
+// Récupération des notifications des demandes pour le RH
+$result_notifications = $conn->query("SELECT  type,description_dem,date_dem,employe.nom_emp FROM demande JOIN employe ON demande.id_emp = employe.id_emp  WHERE statut_dem = 'En attente' ORDER BY date_dem DESC ");
+
+// Fonction pour calculer le temps écoulé
+function time_elapsed($datetime) {
+    $timestamp = strtotime($datetime);
+    $diff = time() - $timestamp;
+
+    if ($diff < 60) {
+        return "Il y a " . $diff . " secondes";
+    } elseif ($diff < 3600) {
+        return "Il y a " . floor($diff / 60) . " minutes";
+    } elseif ($diff < 86400) {
+        return "Il y a " . floor($diff / 3600) . " heures";
+    } else {
+        return "Le " . date('d/m/Y H:i', $timestamp);
+    }
+}
+
+// Récupération du nombre d'employés
+$result_employe = $conn->query("SELECT COUNT(*) AS total FROM employe");
+$row_employe = $result_employe->fetch_assoc();
+$total_employe = $row_employe['total'];
+
+// Récupération du nombre de demandes
+$result_demande = $conn->query("SELECT COUNT(*) AS total FROM demande WHERE statut_dem='En attente'");
+$row_demande = $result_demande->fetch_assoc();
+$total_demande = $row_demande['total'];
+
+?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -262,7 +294,7 @@
                     <span class="card-title">EMPLOYÉS</span>
                     <i class="fas fa-users card-icon"></i>
                 </div>
-                <div class="card-value">24</div>
+                <div class="card-value"><?php echo $total_employe; ?></div>
             </div>
             
             <div class="card">
@@ -270,56 +302,46 @@
                     <span class="card-title">DEMANDES</span>
                     <i class="fas fa-clipboard-list card-icon"></i>
                 </div>
-                <div class="card-value">10</div>
+                <div class="card-value"><?php echo $total_demande; ?></div>
             </div>
             
         </div>
 
         <!-- Notifications Section -->
         <div class="notifications-section">
-            <h2 class="section-title"><i class="fas fa-bell"></i> Demandes Récentes</h2>
-            <ul class="notification-list">
+    <h2 class="section-title"><i class="fas fa-bell"></i> Demandes Récentes</h2>
+    <ul class="notification-list">
+        <?php if ($result_notifications->num_rows > 0) { ?>
+            <?php while ($row = $result_notifications->fetch_assoc()) { ?>
                 <li class="notification-item">
                     <div class="notification-icon">
-                        <i class="fas fa-calendar-day"></i>
+                        <?php 
+                        // Attribution des icônes selon le type de demande
+                        $icons = [
+                            "Demande de congé" => "fas fa-calendar-day",
+                            "Demande d'avance" => "fas fa-euro-sign",
+                            "Certificat médical" => "fas fa-file-medical",
+                            "Demande de matériel" => "fas fa-tools"
+                        ];
+                        $icon_class = $icons[$row['type']] ?? "fas fa-file-alt";
+                        ?>
+                        <i class="<?= $icon_class ?>"></i>
                     </div>
                     <div class="notification-content">
-                        <div class="notification-title">Demande de congé - Jean Dupont</div>
-                        <div class="notification-time">Il y a 15 minutes</div>
+                        <div class="notification-title"><?= htmlspecialchars($row['type']) ?> - <?= htmlspecialchars($row['nom_emp']) ?></div>
+                        <div class="notification-time"><?= time_elapsed($row['date_dem']) ?></div>
                     </div>
                     <button class="btn-view">Voir</button>
                 </li>
-                <li class="notification-item">
-                    <div class="notification-icon">
-                        <i class="fas fa-euro-sign"></i>
-                    </div>
-                    <div class="notification-content">
-                        <div class="notification-title">Demande d'avance - Marie Lambert</div>
-                        <div class="notification-time">Il y a 1 heure</div>
-                    </div>
-                    <button class="btn-view">Voir</button>
-                </li>
-                <li class="notification-item">
-                    <div class="notification-icon">
-                        <i class="fas fa-file-medical"></i>
-                    </div>
-                    <div class="notification-content">
-                        <div class="notification-title">Certificat médical - Ahmed Benali</div>
-                        <div class="notification-time">Hier, 14:30</div>
-                    </div>
-                    <button class="btn-view">Voir</button>
-                </li>
-                <li class="notification-item">
-                    <div class="notification-icon">
-                        <i class="fas fa-tools"></i>
-                    </div>
-                    <div class="notification-content">
-                        <div class="notification-title">Demande de matériel - Sophie Martin</div>
-                        <div class="notification-time">Hier, 10:15</div>
-                    </div>
-                    <button class="btn-view">Voir</button>
-                </li>
-            </ul>
+            <?php } ?>
+        <?php } else { ?>
+            <li class="notification-item">
+                <div class="notification-content">
+                    <div class="notification-title">Aucune nouvelle demande</div>
+                </div>
+            </li>
+        <?php } ?>
+        </ul>
         </div>
     </div>
 
