@@ -450,7 +450,7 @@ $conn->close();
         <!-- Sidebar -->
         <div class="sidebar">
             <div class="sidebar-header">
-                <img src="admin.jpeg" alt="Agent Photo" class="admin-photo">
+                <img src="admin_new.jpeg" alt="Agent Photo" class="admin-photo">
                 <h2><?php echo htmlspecialchars($agent['prenom_agentd'] . " " . $agent['nom_agentd']); ?></h2>
                 <p><?php echo htmlspecialchars($agent['nom_dep']); ?></p>
             </div>

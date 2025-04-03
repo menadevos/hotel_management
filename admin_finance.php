@@ -377,7 +377,7 @@ $conn->close();
         <!-- Sidebar -->
         <div class="sidebar">
             <div class="sidebar-header">
-                <img src="admin.jpeg" alt="Admin Photo" class="admin-photo">
+                <img src="admin_new.jpeg" alt="Admin Photo" class="admin-photo">
                 <h2><?php echo $agent['prenom_agentf'] . " " . $agent['nom_agentf']; ?></h2>
             </div>
             <ul class="sidebar-menu">
