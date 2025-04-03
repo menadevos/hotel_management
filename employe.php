@@ -40,11 +40,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['submit_demande'])) {
     $type = $_POST['type'];
     $description = $_POST['description'];
     $statut = 'En attente';
+    $id_agentd = $employe['id_agentd']; // ID de l'agent de département lié à l'employé
+    $id_rh = $employe['idRH']; // ID du RH lié à l'employé
 
-    $sql = "INSERT INTO demande (type, description_dem, date_dem, statut_dem, id_emp) 
-            VALUES (?, ?, CURDATE(), ?, ?)";
+    $sql = "INSERT INTO demande (type, description_dem, date_dem, statut_dem, id_emp, id_agentd, idRH) 
+            VALUES (?, ?, CURDATE(), ?, ?, ?, ?)";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("sssi", $type, $description, $statut, $user_id);
+    $stmt->bind_param("sssiii", $type, $description, $statut, $user_id, $id_agentd, $id_rh);
     
     if ($stmt->execute()) {
         $message = "Demande créée avec succès!";
@@ -432,7 +434,7 @@ $conn->close();
                         <label for="type">Type de demande:</label>
                         <select name="type" required>
                             <option value="Congé">Congé</option>
-                            <option value="Avance de salaire">Avance de salaire</option>
+                            <option value="Salaire">Salaire</option>
                         </select>
                         <label for="description">Description:</label>
                         <textarea name="description" required></textarea>

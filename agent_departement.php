@@ -79,6 +79,7 @@ if (isset($_GET['action']) && isset($_GET['demande_id'])) {
 if (isset($_GET['action']) && $_GET['action'] === 'distribuer_salaire' && isset($_GET['emp_id'])) {
     $emp_id = intval($_GET['emp_id']);
     
+    // Récupérer les informations de l'employé et du budget
     $sql = "SELECT e.salaire, e.prenom_emp, e.nom_emp, ad.monnaieDep 
             FROM employe e 
             JOIN agent_departement ad ON e.id_dep = ad.id_dep 
@@ -109,12 +110,12 @@ if (isset($_GET['action']) && $_GET['action'] === 'distribuer_salaire' && isset(
                 $stmt->execute();
                 $stmt->close();
                 
-                // 2. Enregistrer la transaction
+                // 2. Enregistrer la transaction avec l'ID de l'employé
                 $description = "Paiement salaire pour " . $nom_employe;
-                $sql = "INSERT INTO transaction (montant_trans, date_trans, typeTrans, id_agent_departement) 
-                        VALUES (?, NOW(), 'Paiement Salaire', ?)";
+                $sql = "INSERT INTO transaction (montant_trans, date_trans, typeTrans, id_agent_departement, id_emp) 
+                        VALUES (?, NOW(), 'Paiement Salaire', ?, ?)";
                 $stmt = $conn->prepare($sql);
-                $stmt->bind_param("di", $salaire, $user_id);
+                $stmt->bind_param("dii", $salaire, $user_id, $emp_id);
                 $stmt->execute();
                 $transaction_id = $stmt->insert_id;
                 $stmt->close();
@@ -144,7 +145,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'distribuer_salaire' && isset(
         $message = "Employé ou département non trouvé!";
     }
 }
-
 // Traitement de la génération de facture
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['generer_facture'])) {
     $description = $_POST['description'];
