@@ -42,8 +42,6 @@ $message = "";
 // Vérifier la section active via l’URL (ex. ?section=distribution)
 $sectionActive = $_GET['section'] ?? '';
 
-// Récupérer les rapports depuis la table rapports
-// Récupérer les rapports depuis la table rapports
 // Récupérer les rapports avec les informations de l'agent et du département
 $rapports = [];
 if ($sectionActive === 'rapport') {
@@ -60,6 +58,22 @@ if ($sectionActive === 'rapport') {
     }
 }
 
+// Récupérer les factures pour l'agent financier (lié à agent_departement)
+$factures = [];
+if ($sectionActive === 'factures') {
+    $sql = "SELECT f.*, ad.nom_agentd, ad.prenom_agentd, d.nom_dep 
+            FROM facture f
+            JOIN agent_departement ad ON f.id_agent_departement = ad.id_agentd
+            JOIN departement d ON ad.id_dep = d.id_dep
+            WHERE f.id_agent_departement IS NOT NULL 
+            ORDER BY f.id_fac DESC";
+    $result = $conn->query($sql);
+    if ($result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
+            $factures[] = $row;
+        }
+    }
+}
 
 // Traitement de la distribution (si le formulaire est soumis)
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['distribuer'])) {
@@ -80,6 +94,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['distribuer'])) {
                     $stmt->bind_param("ds", $montant, $dep);
                     $stmt->execute();
                     $stmt->close();
+
+                    // Enregistrer la transaction avec id_agent_financier et id_agent_departement
+                    $sql_trans = "INSERT INTO `transaction` (id_agent_financier, id_agent_departement, montant_trans, date_trans, typeTrans) 
+                                  SELECT ?, ad.id_agentd, ?, NOW(), 'Distribution' 
+                                  FROM agent_departement ad 
+                                  JOIN departement d ON ad.id_dep = d.id_dep 
+                                  WHERE d.nom_dep = ?";
+                    $stmt_trans = $conn->prepare($sql_trans);
+                    if ($stmt_trans) {
+                        $stmt_trans->bind_param("ids", $user_id, $montant, $dep);
+                        $stmt_trans->execute();
+                        $stmt_trans->close();
+                    } else {
+                        $message = "Erreur lors de l'enregistrement de la transaction: " . $conn->error;
+                        break;
+                    }
                 } else {
                     $message = "Erreur lors de la préparation de la requête.";
                     break;
@@ -107,6 +137,36 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['distribuer'])) {
         $agent = $result->fetch_assoc();
         $stmt->close();
     }
+}
+
+// Traitement des actions sur les factures (approuver/refuser)
+if (isset($_GET['action']) && in_array($_GET['action'], ['approuver', 'refuser']) && isset($_GET['facture_id'])) {
+    $facture_id = intval($_GET['facture_id']);
+    $nouveau_statut = ($_GET['action'] === 'approuver') ? 'Approuvée' : 'Rejetée';
+
+    $sql = "UPDATE facture SET statut = ? WHERE id_fac = ? AND id_agent_departement IS NOT NULL";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("si", $nouveau_statut, $facture_id);
+    if ($stmt->execute()) {
+        $message = "Facture " . ($_GET['action'] === 'approuver' ? 'approuvée' : 'rejetée') . " avec succès !";
+        // Rafraîchir la liste des factures
+        $sql = "SELECT f.*, ad.nom_agentd, ad.prenom_agentd, d.nom_dep 
+                FROM facture f
+                JOIN agent_departement ad ON f.id_agent_departement = ad.id_agentd
+                JOIN departement d ON ad.id_dep = d.id_dep
+                WHERE f.id_agent_departement IS NOT NULL 
+                ORDER BY f.id_fac DESC";
+        $result = $conn->query($sql);
+        $factures = [];
+        if ($result->num_rows > 0) {
+            while ($row = $result->fetch_assoc()) {
+                $factures[] = $row;
+            }
+        }
+    } else {
+        $message = "Erreur lors de la mise à jour de la facture.";
+    }
+    $stmt->close();
 }
 
 // Traitement de la déconnexion
@@ -343,32 +403,116 @@ $conn->close();
             font-size: 16px;
             cursor: pointer;
             transition: background-color 0.3s;
+            width: 100%;
+            text-align: center;
         }
 
         .logout-btn:hover {
             background-color: #9e6f6f;
         }
 
-        /* Style pour la liste des rapports */
+        /* Style amélioré pour la liste des rapports et factures */
         .rapport-list {
             list-style: none;
             padding: 0;
         }
 
         .rapport-item {
-            margin-bottom: 15px;
-            padding: 10px;
-            background: #f1dddd;
-            border-radius: 5px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid #b68b8b;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
-        .rapport-item p {
-            margin: 5px 0;
+        .rapport-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
-        .rapport-item .date {
+        .rapport-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .rapport-header .departement {
+            font-size: 16px;
+            font-weight: bold;
+            color: #b68b8b;
+        }
+
+        .rapport-header .date {
             font-size: 12px;
             color: #888;
+            background-color: #f1dddd;
+            padding: 4px 8px;
+            border-radius: 12px;
+        }
+
+        .rapport-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .rapport-details p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #4a4a4a;
+        }
+
+        .rapport-details p strong {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .rapport-finances {
+            display: flex;
+            justify-content: space-between;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+
+        .rapport-finances p {
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .rapport-finances .revenu {
+            color: #4CAF50;
+        }
+
+        .rapport-finances .depenses {
+            color: #f44336;
+        }
+
+        /* Styles pour les statuts des factures */
+        .status {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .status-approved {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .status-rejected {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .status-pending {
+            background-color: #FFC107;
+            color: #000;
         }
     </style>
 </head>
@@ -377,13 +521,19 @@ $conn->close();
         <!-- Sidebar -->
         <div class="sidebar">
             <div class="sidebar-header">
-                <img src="admin.jpeg" alt="Admin Photo" class="admin-photo">
+                <img src="admin_new.jpeg" alt="Admin Photo" class="admin-photo">
                 <h2><?php echo $agent['prenom_agentf'] . " " . $agent['nom_agentf']; ?></h2>
             </div>
             <ul class="sidebar-menu">
                 <li><a href="?section=budget">Budget Total</a></li>
                 <li><a href="?section=distribution">Distribution de Monnaie</a></li>
                 <li><a href="?section=rapport">Rapport</a></li>
+                <li><a href="?section=factures">Consulter les Factures</a></li>
+                <li>
+                    <form method="POST">
+                        <button type="submit" name="logout" class="logout-btn">Se Déconnecter</button>
+                    </form>
+                </li>
             </ul>
         </div>
 
@@ -396,11 +546,6 @@ $conn->close();
                     <span>TetraVilla</span>
                 </div>
             </header>
-
-            <!-- Bouton de déconnexion -->
-            <form method="POST" style="margin-bottom: 20px;">
-                <button type="submit" name="logout" class="logout-btn">Se Déconnecter</button>
-            </form>
 
             <!-- Dashboard Sections -->
             <div class="dashboard-sections">
@@ -436,29 +581,77 @@ $conn->close();
                     <?php } ?>
                 </section>
 
-               
-<!-- Rapport -->
-<section id="rapport" class="dashboard-card">
-    <h3>Rapport</h3>
-    <?php if ($sectionActive === 'rapport') { ?>
-        <?php if (empty($rapports)) { ?>
-            <p>Aucun rapport disponible.</p>
-        <?php } else { ?>
-            <ul class="rapport-list">
-                <?php foreach ($rapports as $rapport) { ?>
-                    <li class="rapport-item">
-                        <p><strong>Description:</strong> <?php echo htmlspecialchars($rapport['description']); ?></p>
-                        <p><strong>Agent:</strong> <?php echo htmlspecialchars($rapport['prenom_agentd'] . ' ' . $rapport['nom_agentd']); ?></p>
-                        <p><strong>Département:</strong> <?php echo htmlspecialchars($rapport['nom_dep']); ?></p>
-                        <p><strong>Revenu total:</strong> <?php echo number_format($rapport['revenu_total'], 2); ?> DH</p>
-                        <p><strong>Dépenses totales:</strong> <?php echo number_format($rapport['depenses_total'], 2); ?> DH</p>
-                        <p class="date"><?php echo date('d/m/Y', strtotime($rapport['date_rapp'])); ?></p>
-                    </li>
-                <?php } ?>
-            </ul>
-        <?php } ?>
-    <?php } ?>
-</section>
+                <!-- Rapport -->
+                <section id="rapport" class="dashboard-card">
+                    <h3>Rapport</h3>
+                    <?php if ($sectionActive === 'rapport') { ?>
+                        <?php if (empty($rapports)) { ?>
+                            <p>Aucun rapport disponible.</p>
+                        <?php } else { ?>
+                            <ul class="rapport-list">
+                                <?php foreach ($rapports as $rapport) { ?>
+                                    <li class="rapport-item">
+                                        <div class="rapport-header">
+                                            <span class="departement"><?php echo htmlspecialchars($rapport['nom_dep']); ?></span>
+                                            <span class="date"><?php echo date('d/m/Y', strtotime($rapport['date_rapp'])); ?></span>
+                                        </div>
+                                        <div class="rapport-details">
+                                            <p><strong>Agent:</strong> <?php echo htmlspecialchars($rapport['prenom_agentd'] . ' ' . $rapport['nom_agentd']); ?></p>
+                                            <p><strong>Description:</strong> <?php echo htmlspecialchars($rapport['description']); ?></p>
+                                        </div>
+                                        <div class="rapport-finances">
+                                            <p class="revenu">Revenu: <?php echo number_format($rapport['revenu_total'], 2); ?> DH</p>
+                                            <p class="depenses">Dépenses: <?php echo number_format($rapport['depenses_total'], 2); ?> DH</p>
+                                        </div>
+                                    </li>
+                                <?php } ?>
+                            </ul>
+                        <?php } ?>
+                    <?php } ?>
+                </section>
+
+                <!-- Consulter les Factures -->
+                <section id="factures" class="dashboard-card">
+                    <h3>Consulter les Factures</h3>
+                    <?php if ($sectionActive === 'factures') { ?>
+                        <?php if (!empty($message)) echo "<p class='message'>$message</p>"; ?>
+                        <?php if (empty($factures)) { ?>
+                            <p>Aucune facture disponible.</p>
+                        <?php } else { ?>
+                            <ul class="rapport-list">
+                                <?php foreach ($factures as $facture) { ?>
+                                    <li class="rapport-item">
+                                        <div class="rapport-header">
+                                            <span class="departement"><?php echo htmlspecialchars($facture['nom_dep']); ?></span>
+                                            <span class="date"><?php echo "ID: " . $facture['id_fac']; ?></span>
+                                        </div>
+                                        <div class="rapport-details">
+                                            <p><strong>Agent:</strong> <?php echo htmlspecialchars($facture['prenom_agentd'] . ' ' . $facture['nom_agentd']); ?></p>
+                                            <p><strong>Description:</strong> <?php echo htmlspecialchars($facture['description']); ?></p>
+                                            <p><strong>Montant:</strong> <?php echo number_format($facture['montant'], 2); ?> DH</p>
+                                            <p><strong>Statut:</strong> 
+                                                <span class="status status-<?php 
+                                                    echo strtolower($facture['statut']) === 'approuvée' ? 'approved' : 
+                                                         (strtolower($facture['statut']) === 'rejetée' ? 'rejected' : 'pending'); 
+                                                ?>">
+                                                    <?php echo htmlspecialchars($facture['statut']); ?>
+                                                </span>
+                                            </p>
+                                        </div>
+                                        <?php if ($facture['statut'] === 'En attente') { ?>
+                                            <div class="action-buttons" style="margin-top: 10px;">
+                                                <a href="?section=factures&action=approuver&facture_id=<?php echo $facture['id_fac']; ?>" 
+                                                   style="background-color: #4CAF50; color: white; padding: 5px 10px; border-radius: 4px; text-decoration: none;">Approuver</a>
+                                                <a href="?section=factures&action=refuser&facture_id=<?php echo $facture['id_fac']; ?>" 
+                                                   style="background-color: #f44336; color: white; padding: 5px 10px; border-radius: 4px; text-decoration: none;">Refuser</a>
+                                            </div>
+                                        <?php } ?>
+                                    </li>
+                                <?php } ?>
+                            </ul>
+                        <?php } ?>
+                    <?php } ?>
+                </section>
             </div>
         </div>
     </div>
