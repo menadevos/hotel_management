@@ -92,7 +92,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     header("Location: gestionnaire_stock.php");
                     break;
                 case "rh":
-                    header("Location: rh.php");
+                    header("Location: interfaceRH.php");
                     break;
             }
             exit; // Ensure no further code is executed after redirection
