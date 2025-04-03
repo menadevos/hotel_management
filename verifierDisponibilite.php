@@ -1,4 +1,5 @@
 <?php
+session_start();
 try {
     // Vérification de la méthode HTTP
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -64,6 +65,7 @@ try {
 
         if ($conn->query($sqlReservation)) {
             $reservationId = $conn->insert_id; // ID de la réservation
+            // $_SESSION['reservation_id'] = $reservationId; // Stocker dans la session
             header("Location: DetailsChambre.php?id_reservation=$reservationId");
             exit;
         } else {
