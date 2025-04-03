@@ -24,7 +24,7 @@
         .main-container {
             display: flex;
             width: 100%;
-            max-width: 800px; /* Légèrement réduit */
+            max-width: 800px; 
             background-color: white;
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
@@ -62,52 +62,63 @@
         }
         
         .logo {
-            font-size: 22px; /* Réduit */
-            font-weight: bold;
-            color: #8b1e3f;
-            margin-bottom: 8px; /* Réduit */
-            text-align: center;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           margin-bottom: 20px;
         }
-        
+
+    .logo-img {
+        width: 40px;
+        height: 40px;
+        margin-right: 10px;
+    }
+
+    .logo h1 {
+        font-size: 24px;
+        color: #4a4a4a;
+        font-weight: bold;
+    }
+            
         .subtitle {
-            font-size: 12px; /* Réduit */
+            font-size: 12px; 
             color: #7f8c8d;
-            margin-bottom: 20px; /* Réduit */
+            margin-bottom: 20px; 
             text-align: center;
         }
         
         h2 {
-            font-size: 18px; /* Réduit */
+            font-size: 18px; 
             color: #2c3e50;
-            margin-bottom: 12px; /* Réduit */
+            margin-bottom: 12px; 
             text-align: center;
         }
         
         .description {
-            font-size: 12px; /* Réduit */
+            font-size: 12px; 
             color: #7f8c8d;
-            margin-bottom: 20px; /* Réduit */
+            margin-bottom: 20px; 
             text-align: center;
         }
         
         .form-group {
-            margin-bottom: 12px; /* Réduit */
+            margin-bottom: 12px; 
         }
         
         .form-group label {
             display: block;
-            margin-bottom: 4px; /* Réduit */
-            font-size: 12px; /* Réduit */
+            margin-bottom: 4px; 
+            font-size: 12px; 
             color: #2c3e50;
             font-weight: 500;
         }
         
         .form-group input {
             width: 100%;
-            padding: 10px 12px; /* Réduit */
+            padding: 10px 12px; 
             border: 1px solid #e0e0e0;
             border-radius: 5px;
-            font-size: 13px; /* Réduit */
+            font-size: 13px; 
             transition: all 0.2s;
         }
         
@@ -119,15 +130,15 @@
         
         .login-button {
             width: 100%;
-            padding: 10px; /* Réduit */
+            padding: 10px;
             background-color: #8b1e3f;
             color: white;
             border: none;
             border-radius: 5px;
-            font-size: 14px; /* Réduit */
-            font-weight: 500; /* Légèrement réduit */
+            font-size: 14px;
+            font-weight: 500;
             cursor: pointer;
-            margin-top: 12px; /* Réduit */
+            margin-top: 12px; 
             transition: background-color 0.2s;
         }
         
@@ -136,9 +147,9 @@
         }
         
         .note {
-            font-size: 12px; /* Réduit */
+            font-size: 12px; 
             color: #7f8c8d;
-            margin-top: 20px; /* Réduit */
+            margin-top: 20px; 
             text-align: center;
         }
         
@@ -159,7 +170,7 @@
             }
             
             .image-section {
-                min-height: 180px; /* Réduit */
+                min-height: 180px; 
             }
             
             .form-section {
@@ -174,10 +185,13 @@
         
         <div class="form-section">
             <div class="login-container">
-                <div class="logo">TetraVilla</div>
+                <div class="logo">
+                <img src="maqlog.jpg"  class="logo-img">
+                <h1>TetraVilla</h1>
+                </div>
                 <div class="subtitle">Espace Personnel</div>
                 
-                <h2>Créer un compte employé</h2>
+                <h2>Créer un compte </h2>
                 <p class="description">Remplissez les informations pour créer un compte</p>
                 
                 <form action="/signup" method="POST">
@@ -192,7 +206,7 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="code">Code employé</label>
+                        <label for="code">Code</label>
                         <input type="text" id="code" name="code" required>
                     </div>
                     

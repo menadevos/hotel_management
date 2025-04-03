@@ -114,6 +114,41 @@ h3 {
     font-size: 14px;
 }
 
+/* New styles for the select element (Roles) */
+.form-group select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+    background-color: #fff;
+    color: #4a4a4a;
+    appearance: none; /* Remove default dropdown arrow */
+    -webkit-appearance: none; /* For Safari */
+    -moz-appearance: none; /* For Firefox */
+    cursor: pointer;
+}
+
+/* Optional: Add a custom arrow for the dropdown */
+.form-group select {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="%234a4a4a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>');
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 12px;
+}
+
+/* Style for when the select is focused */
+.form-group select:focus {
+    outline: none;
+    border-color: #8b1e3f;
+    box-shadow: 0 0 5px rgba(139, 30, 63, 0.3);
+}
+
+/* Style for options (though limited control in some browsers) */
+.form-group select option {
+    color: #4a4a4a;
+}
+
 .form-options {
     display: flex;
     justify-content: space-between;
