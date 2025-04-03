@@ -1,4 +1,6 @@
 <?php
+session_start();
+
 // Connexion à la base de données
 $conn = new mysqli('localhost', 'root', '', 'tetravilla');
 if ($conn->connect_error) {
@@ -7,6 +9,7 @@ if ($conn->connect_error) {
 
 // Récupérer l'ID de la réservation depuis l'URL
 $idReservation = $_GET['id_reservation'] ?? null;
+$_SESSION['reservation_id']= $idReservation;
 
 if (!$idReservation) {
     echo "<h1>Aucune réservation spécifiée.</h1>";
@@ -31,6 +34,48 @@ if ($result->num_rows > 0) {
     echo "<p>Capacité : {$chambre['capacite']} personnes</p>";
     echo "<p>Statut : {$chambre['statut']}</p>";
     echo "<p>Tarif : {$chambre['tarif']} DH</p>";
+    echo "<a href='consultationServices.php' style='display: inline-block; background-color: #007BFF; color: white; text-decoration: none; padding: 10px 20px; border-radius: 5px;'>Consulter les Services</a>";
+    echo"<style> 
+    body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    margin: 20px;
+    padding: 20px;
+}
+
+.chambre-details {
+    background-color: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    max-width: 600px;
+    margin: auto;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.title {
+    color: #333;
+    font-size: 24px;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.info {
+    font-size: 18px;
+    color: #555;
+    margin: 10px 0;
+}
+
+.value {
+    color: #000;
+    font-weight: bold;
+}
+
+.error {
+    color: #ff0000;
+    text-align: center;
+}   
+    </style>";
 } else {
     echo "<h1>Aucune chambre correspondante trouvée pour cette réservation.</h1>";
 }
