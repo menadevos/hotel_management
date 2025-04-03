@@ -78,10 +78,168 @@ if (isset($_GET['action']) && isset($_GET['demande_id'])) {
 // Traitement de la distribution de salaire
 if (isset($_GET['action']) && $_GET['action'] === 'distribuer_salaire' && isset($_GET['emp_id'])) {
     $emp_id = intval($_GET['emp_id']);
-    // Logique pour "distribuer le salaire" (par exemple, marquer le salaire comme payé)
-    // Ici, je vais simplement afficher un message pour l'exemple
-    $message = "Salaire distribué avec succès pour l'employé ID $emp_id!";
-    // Vous pouvez ajouter une logique pour mettre à jour une table ou enregistrer la distribution
+    
+    $sql = "SELECT e.salaire, e.prenom_emp, e.nom_emp, ad.monnaieDep 
+            FROM employe e 
+            JOIN agent_departement ad ON e.id_dep = ad.id_dep 
+            WHERE e.id_emp = ? AND ad.id_agentd = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("ii", $emp_id, $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $data = $result->fetch_assoc();
+    $stmt->close();
+
+    if ($data) {
+        $salaire = floatval($data['salaire']);
+        $budget_actuel = floatval($data['monnaieDep']);
+        $nom_employe = $data['prenom_emp'] . ' ' . $data['nom_emp'];
+
+        if ($budget_actuel >= $salaire) {
+            $nouveau_budget = $budget_actuel - $salaire;
+            
+            // Commencer une transaction
+            $conn->begin_transaction();
+            
+            try {
+                // 1. Mettre à jour le budget du département
+                $sql = "UPDATE agent_departement SET monnaieDep = ? WHERE id_agentd = ?";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param("di", $nouveau_budget, $user_id);
+                $stmt->execute();
+                $stmt->close();
+                
+                // 2. Enregistrer la transaction
+                $description = "Paiement salaire pour " . $nom_employe;
+                $sql = "INSERT INTO transaction (montant_trans, date_trans, typeTrans, id_agent_departement) 
+                        VALUES (?, NOW(), 'Paiement Salaire', ?)";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param("di", $salaire, $user_id);
+                $stmt->execute();
+                $transaction_id = $stmt->insert_id;
+                $stmt->close();
+                
+                // 3. Générer un reçu
+                $sql = "INSERT INTO recu (details, type, DateEmission, id_transaction) 
+                        VALUES (?, 'Paiement Salaire', NOW(), ?)";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param("si", $description, $transaction_id);
+                $stmt->execute();
+                $stmt->close();
+                
+                // Valider la transaction
+                $conn->commit();
+                
+                $message = "Salaire de " . number_format($salaire, 2) . " DH distribué avec succès pour l'employé " . $nom_employe . "! Nouveau budget: " . number_format($nouveau_budget, 2) . " DH";
+                $agent['monnaieDep'] = $nouveau_budget;
+            } catch (Exception $e) {
+                // Annuler en cas d'erreur
+                $conn->rollback();
+                $message = "Erreur lors de la distribution du salaire: " . $e->getMessage();
+            }
+        } else {
+            $message = "Budget insuffisant! Budget actuel: " . number_format($budget_actuel, 2) . " DH, Salaire requis: " . number_format($salaire, 2) . " DH";
+        }
+    } else {
+        $message = "Employé ou département non trouvé!";
+    }
+}
+
+// Traitement de la génération de facture
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['generer_facture'])) {
+    $description = $_POST['description'];
+    $montant = floatval($_POST['montant']);
+    $type = $_POST['type'];
+    $statut = 'En attente'; // Statut initial
+
+    $sql = "INSERT INTO facture (description, montant, statut, type, id_agent_departement) 
+            VALUES (?, ?, ?, ?, ?)";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("sdssi", $description, $montant, $statut, $type, $user_id);
+    
+    if ($stmt->execute()) {
+        $message = "Facture générée avec succès!";
+    } else {
+        $message = "Erreur lors de la génération de la facture: " . $conn->error;
+    }
+    $stmt->close();
+}
+// Traitement du paiement de la facture
+if (isset($_GET['action']) && $_GET['action'] === 'payer' && isset($_GET['facture_id'])) {
+    $facture_id = intval($_GET['facture_id']);
+    
+    // Vérifier le budget et récupérer les détails de la facture
+    $sql = "SELECT f.montant, f.description, f.type, ad.monnaieDep 
+            FROM facture f 
+            JOIN agent_departement ad ON f.id_agent_departement = ad.id_agentd 
+            WHERE f.id_fac = ? AND f.id_agent_departement = ? AND f.statut = 'Approuvée'";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("ii", $facture_id, $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $data = $result->fetch_assoc();
+    $stmt->close();
+
+    if ($data) {
+        $montant = floatval($data['montant']);
+        $budget_actuel = floatval($data['monnaieDep']);
+        $description_facture = $data['description'];
+        $type_facture = $data['type'];
+
+        if ($budget_actuel >= $montant) {
+            // Démarrer une transaction pour garantir l'intégrité des données
+            $conn->begin_transaction();
+
+            try {
+                // 1. Mettre à jour le budget
+                $nouveau_budget = $budget_actuel - $montant;
+                $sql = "UPDATE agent_departement SET monnaieDep = ? WHERE id_agentd = ?";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param("di", $nouveau_budget, $user_id);
+                $stmt->execute();
+                $stmt->close();
+
+                // 2. Enregistrer la transaction
+                $sql = "INSERT INTO transaction (montant_trans, date_trans, typeTrans, id_agent_departement) 
+                        VALUES (?, NOW(), 'Paiement Facture', ?)";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param("di", $montant, $user_id);
+                $stmt->execute();
+                $transaction_id = $stmt->insert_id;
+                $stmt->close();
+
+                // 3. Mettre à jour la facture avec l'ID de la transaction
+                $sql = "UPDATE facture SET statut = 'Payée', id_transaction = ? WHERE id_fac = ? AND id_agent_departement = ?";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param("iii", $transaction_id, $facture_id, $user_id);
+                $stmt->execute();
+                $stmt->close();
+
+                // 4. Générer le reçu avec les informations de la facture et de la transaction
+                $description_recu = "Paiement de la facture ID $facture_id - Description: $description_facture - Type: $type_facture";
+                $sql = "INSERT INTO recu (details, type, DateEmission, id_transaction) 
+                        VALUES (?, 'Paiement Facture', NOW(), ?)";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param("si", $description_recu, $transaction_id);
+                $stmt->execute();
+                $stmt->close();
+
+                // Valider la transaction
+                $conn->commit();
+
+                $message = "Paiement effectué avec succès! Budget mis à jour: " . number_format($nouveau_budget, 2) . " DH";
+                $agent['monnaieDep'] = $nouveau_budget;
+            } catch (Exception $e) {
+                // Annuler en cas d'erreur
+                $conn->rollback();
+                $message = "Erreur lors du paiement de la facture: " . $e->getMessage();
+            }
+        } else {
+            $message = "Budget insuffisant pour payer la facture! Budget actuel: " . number_format($budget_actuel, 2) . " DH";
+        }
+    } else {
+        $message = "Facture non trouvée ou non approuvée!";
+    }
 }
 
 // Récupérer les employés du département
@@ -112,16 +270,30 @@ if ($section === 'rapport') {
     $stmt->close();
 }
 
-// Récupérer les demandes du département
+// Récupérer les demandes du département (uniquement type "salaire")
 $demandes = [];
 if ($section === 'demande') {
-    $sql = "SELECT * FROM demande WHERE id_agentd = ? ORDER BY date_dem DESC";
+    $sql = "SELECT * FROM demande WHERE id_agentd = ? AND type = 'salaire' ORDER BY date_dem DESC";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("i", $user_id);
     $stmt->execute();
     $result = $stmt->get_result();
     while ($row = $result->fetch_assoc()) {
         $demandes[] = $row;
+    }
+    $stmt->close();
+}
+
+// Récupérer les factures liées à l'agent de département
+$factures = [];
+if ($section === 'generer_facture') {
+    $sql = "SELECT * FROM facture WHERE id_agent_departement = ? ORDER BY id_fac DESC";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_assoc()) {
+        $factures[] = $row;
     }
     $stmt->close();
 }
@@ -297,14 +469,14 @@ $conn->close();
         }
 
         /* Ajouts pour le formulaire de rapport */
-        .rapport-form {
+        .rapport-form, .facture-form {
             background: #f8f9fa;
             padding: 20px;
             border-radius: 8px;
             margin-bottom: 20px;
         }
 
-        .rapport-form label {
+        .rapport-form label, .facture-form label {
             display: block;
             margin-bottom: 5px;
             font-weight: bold;
@@ -312,7 +484,10 @@ $conn->close();
 
         .rapport-form input[type="text"],
         .rapport-form textarea,
-        .rapport-form input[type="number"] {
+        .rapport-form input[type="number"],
+        .facture-form input[type="text"],
+        .facture-form input[type="number"],
+        .facture-form select {
             width: 100%;
             padding: 8px;
             margin-bottom: 15px;
@@ -324,7 +499,7 @@ $conn->close();
             height: 100px;
         }
 
-        .submit-btn {
+        .submit-btn, .generer-btn {
             background-color: #b68b8b;
             color: white;
             padding: 10px 20px;
@@ -333,16 +508,88 @@ $conn->close();
             cursor: pointer;
         }
 
-        .submit-btn:hover {
+        .submit-btn:hover, .generer-btn:hover {
             background-color: #9e6f6f;
         }
 
-        .rapport-list, .demande-list, .employe-list {
+        /* Style amélioré pour la liste des rapports */
+        .rapport-list, .facture-list {
             list-style: none;
             padding: 0;
         }
 
-        .rapport-item, .demande-item, .employe-item {
+        .rapport-item, .facture-item {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid #b68b8b;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .rapport-item:hover, .facture-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .rapport-item .rapport-header, .facture-item .facture-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .rapport-item .rapport-header .date, .facture-item .facture-header .date {
+            font-size: 12px;
+            color: #888;
+            background-color: #f1dddd;
+            padding: 4px 8px;
+            border-radius: 12px;
+        }
+
+        .rapport-item .rapport-details, .facture-item .facture-details {
+            margin-bottom: 10px;
+        }
+
+        .rapport-item .rapport-details p, .facture-item .facture-details p {
+            font-size: 14px;
+            color: #4a4a4a;
+            margin: 5px 0;
+        }
+
+        .rapport-item .rapport-details p.description, .facture-item .facture-details p.description {
+            font-style: italic;
+            color: #666;
+        }
+
+        .rapport-item .rapport-finances {
+            display: flex;
+            justify-content: space-between;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+
+        .rapport-item .rapport-finances p {
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .rapport-item .rapport-finances .revenu {
+            color: #4CAF50;
+        }
+
+        .rapport-item .rapport-finances .depenses {
+            color: #f44336;
+        }
+
+        /* Styles pour la section Demande */
+        .demande-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .demande-item {
             background: #f1dddd;
             padding: 15px;
             margin-bottom: 10px;
@@ -350,7 +597,7 @@ $conn->close();
             position: relative;
         }
 
-        .rapport-date, .demande-date {
+        .demande-date {
             font-size: 0.9em;
             color: #666;
         }
@@ -382,7 +629,7 @@ $conn->close();
             text-decoration: none;
         }
 
-        .distribute-salary-btn {
+        .distribute-salary-btn, .payer-btn, .telecharger-btn {
             background-color: #b68b8b;
             color: white;
             padding: 5px 10px;
@@ -392,7 +639,7 @@ $conn->close();
             text-decoration: none;
         }
 
-        .distribute-salary-btn:hover {
+        .distribute-salary-btn:hover, .payer-btn:hover, .telecharger-btn:hover {
             background-color: #9e6f6f;
         }
 
@@ -416,6 +663,11 @@ $conn->close();
 
         .status-rejected {
             background-color: #f44336;
+            color: white;
+        }
+
+        .status-paid {
+            background-color: #2196F3;
             color: white;
         }
 
@@ -443,6 +695,20 @@ $conn->close();
         .logout-btn:hover {
             background-color: #9e6f6f;
         }
+
+        /* Styles pour la section Distribution Salaire */
+        .employe-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .employe-item {
+            background: #f1dddd;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            position: relative;
+        }
     </style>
 </head>
 <body>
@@ -459,6 +725,7 @@ $conn->close();
                 <li><a href="?section=rapport" class="<?php echo $section === 'rapport' ? 'active' : ''; ?>">Rapport</a></li>
                 <li><a href="?section=demande" class="<?php echo $section === 'demande' ? 'active' : ''; ?>">Demande</a></li>
                 <li><a href="?section=distribution_salaire" class="<?php echo $section === 'distribution_salaire' ? 'active' : ''; ?>">Distribution Salaire</a></li>
+                <li><a href="?section=generer_facture" class="<?php echo $section === 'generer_facture' ? 'active' : ''; ?>">Générer Facture</a></li>
                 <li>
                     <form method="POST">
                         <button type="submit" name="logout" class="logout-btn">Se Déconnecter</button>
@@ -488,9 +755,7 @@ $conn->close();
                 <section id="budget" class="dashboard-card">
                     <h3>Budget Département</h3>
                     <p>
-                        <?php
-                            echo "Budget disponible: " . number_format($agent['monnaieDep'], 2) . " DH";
-                        ?>
+                        <?php echo "Budget disponible: " . number_format($agent['monnaieDep'], 2) . " DH"; ?>
                     </p>
                 </section>
                 <?php endif; ?>
@@ -499,28 +764,29 @@ $conn->close();
                 <?php if ($section === 'rapport'): ?>
                 <section id="rapport" class="dashboard-card">
                     <h3>Rapport</h3>
-                    
                     <form method="POST" class="rapport-form">
                         <label for="description">Description:</label>
                         <textarea name="description" required></textarea>
-                        
                         <label for="revenu_total">Revenu Total (DH):</label>
                         <input type="number" name="revenu_total" step="0.01" min="0" required>
-                        
                         <label for="depenses_total">Dépenses Total (DH):</label>
                         <input type="number" name="depenses_total" step="0.01" min="0" required>
-                        
                         <button type="submit" name="submit_rapport" class="submit-btn">Soumettre Rapport</button>
                     </form>
-                    
                     <h4>Rapports précédents:</h4>
                     <ul class="rapport-list">
                         <?php foreach ($rapports as $rapport): ?>
                             <li class="rapport-item">
-                                <p><?php echo htmlspecialchars($rapport['description']); ?></p>
-                                <p>Revenu: <?php echo number_format($rapport['revenu_total'], 2); ?> DH</p>
-                                <p>Dépenses: <?php echo number_format($rapport['revenu_total'], 2); ?> DH</p>
-                                <p class="rapport-date">Date: <?php echo date('d/m/Y', strtotime($rapport['date_rapp'])); ?></p>
+                                <div class="rapport-header">
+                                    <span class="date"><?php echo date('d/m/Y', strtotime($rapport['date_rapp'])); ?></span>
+                                </div>
+                                <div class="rapport-details">
+                                    <p class="description"><?php echo htmlspecialchars($rapport['description']); ?></p>
+                                </div>
+                                <div class="rapport-finances">
+                                    <p class="revenu">Revenu: <?php echo number_format($rapport['revenu_total'], 2); ?> DH</p>
+                                    <p class="depenses">Dépenses: <?php echo number_format($rapport['depenses_total'], 2); ?> DH</p>
+                                </div>
                             </li>
                         <?php endforeach; ?>
                     </ul>
@@ -530,7 +796,7 @@ $conn->close();
                 <!-- Demande -->
                 <?php if ($section === 'demande'): ?>
                 <section id="demande" class="dashboard-card">
-                    <h3>Demandes</h3>
+                    <h3>Demandes de Salaire</h3>
                     <ul class="demande-list">
                         <?php foreach ($demandes as $demande): ?>
                             <li class="demande-item">
@@ -545,7 +811,6 @@ $conn->close();
                                     </span>
                                 </p>
                                 <p class="demande-date">Date: <?php echo date('d/m/Y', strtotime($demande['date_dem'])); ?></p>
-                                
                                 <?php if ($demande['statut_dem'] === 'En attente'): ?>
                                 <div class="action-buttons">
                                     <a href="?section=demande&action=accepter&demande_id=<?php echo $demande['id_dem']; ?>" class="accept-btn">Accepter</a>
@@ -554,6 +819,11 @@ $conn->close();
                                 <?php endif; ?>
                             </li>
                         <?php endforeach; ?>
+                        <?php if (empty($demandes)): ?>
+                            <li class="demande-item">
+                                <p>Aucune demande de salaire trouvée.</p>
+                            </li>
+                        <?php endif; ?>
                     </ul>
                 </section>
                 <?php endif; ?>
@@ -562,6 +832,7 @@ $conn->close();
                 <?php if ($section === 'distribution_salaire'): ?>
                 <section id="distribution_salaire" class="dashboard-card">
                     <h3>Distribution Salaire</h3>
+                    <p>Budget disponible: <?php echo number_format($agent['monnaieDep'], 2); ?> DH</p>
                     <ul class="employe-list">
                         <?php if (empty($employes)): ?>
                             <li class="employe-item">
@@ -572,9 +843,76 @@ $conn->close();
                                 <li class="employe-item">
                                     <p><strong>Nom:</strong> <?php echo htmlspecialchars($employe['prenom_emp'] . " " . $employe['nom_emp']); ?></p>
                                     <p><strong>Salaire:</strong> <?php echo number_format($employe['salaire'], 2); ?> DH</p>
-                                    <div class="action-buttons">
-                                        <a href="?section=distribution_salaire&action=distribuer_salaire&emp_id=<?php echo $employe['id_emp']; ?>" class="distribute-salary-btn">Distribuer Salaire</a>
+                                    <?php if ($agent['monnaieDep'] >= $employe['salaire']): ?>
+                                        <div class="action-buttons">
+                                            <a href="?section=distribution_salaire&action=distribuer_salaire&emp_id=<?php echo $employe['id_emp']; ?>" 
+                                               class="distribute-salary-btn">Distribuer Salaire</a>
+                                        </div>
+                                    <?php else: ?>
+                                        <p style="color: #f44336;">Budget insuffisant pour ce salaire</p>
+                                    <?php endif; ?>
+                                </li>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </ul>
+                </section>
+                <?php endif; ?>
+
+                <!-- Générer Facture -->
+                <?php if ($section === 'generer_facture'): ?>
+                <section id="generer_facture" class="dashboard-card">
+                    <h3>Générer Facture</h3>
+                    <form method="POST" class="facture-form">
+                        <label for="description">Description:</label>
+                        <textarea name="description" required></textarea>
+                        <label for="montant">Montant (DH):</label>
+                        <input type="number" name="montant" step="0.01" min="0" required>
+                        <label for="type">Type:</label>
+                        <select name="type" required>
+                            <option value="Salaire">Salaire</option>
+                            <option value="Fourniture">Fourniture</option>
+                            <option value="Service">Service</option>
+                        </select>
+                        <button type="submit" name="generer_facture" class="generer-btn">Générer Facture</button>
+                    </form>
+
+                    <h4>Factures Existantes</h4>
+                    <ul class="facture-list">
+                        <?php if (empty($factures)): ?>
+                            <li class="facture-item">
+                                <p>Aucune facture trouvée.</p>
+                            </li>
+                        <?php else: ?>
+                            <?php foreach ($factures as $facture): ?>
+                                <li class="facture-item">
+                                    <div class="facture-header">
+                                        <span class="date"><?php echo "ID: " . $facture['id_fac']; ?></span>
                                     </div>
+                                    <div class="facture-details">
+                                        <p><strong>Description:</strong> <?php echo htmlspecialchars($facture['description']); ?></p>
+                                        <p><strong>Montant:</strong> <?php echo number_format($facture['montant'], 2); ?> DH</p>
+                                        <p><strong>Type:</strong> <?php echo htmlspecialchars($facture['type']); ?></p>
+                                        <p><strong>Statut:</strong> 
+                                            <span class="status status-<?php 
+                                                echo strtolower($facture['statut']) === 'approuvée' ? 'approved' : 
+                                                     (strtolower($facture['statut']) === 'rejetée' ? 'rejected' : 
+                                                     (strtolower($facture['statut']) === 'payée' ? 'paid' : 'pending')); 
+                                            ?>">
+                                                <?php echo htmlspecialchars($facture['statut']); ?>
+                                            </span>
+                                        </p>
+                                    </div>
+                                    <?php if ($facture['statut'] === 'Approuvée'): ?>
+                                        <div class="action-buttons">
+                                            <a href="?section=generer_facture&action=payer&facture_id=<?php echo $facture['id_fac']; ?>" 
+                                               class="payer-btn">Procéder au Paiement</a>
+                                        </div>
+                                    <?php elseif ($facture['statut'] === 'Payée'): ?>
+                                        <div class="action-buttons">
+                                            <a href="telecharger_recu.php?facture_id=<?php echo $facture['id_fac']; ?>" 
+                                               class="telecharger-btn" target="_blank">Télécharger Reçu</a>
+                                        </div>
+                                    <?php endif; ?>
                                 </li>
                             <?php endforeach; ?>
                         <?php endif; ?>
