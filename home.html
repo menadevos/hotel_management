@@ -221,24 +221,25 @@
         <div class="modal-content">
             <span class="close">&times;</span>
             <h3>Formulaire de Réservation</h3>
-            <form>
+            <form method="POST" action="verifierDisponibilite.php">
                 <label for="nom"> Date D'arrivée:</label>
-                <input type="date" id="nom" required><br><br>
+            
+                <input type="date" id="arrivee" name="date_arrivee" required><br><br>
 
-                <label for="date"> Date Depart :</label>
-                <input type="date" id="date" required><br><br>
+                <label for="date" > Date Depart :</label>
+                <input type="date" id="depart" name="date_depart" required><br><br>
 
-                <label for="nbrPersonne"> Nombre Personnes :</label>
-                <input type="number" id="nbrPersonne" required><br><br>
+                <label for="nbrPersonne" > Nombre Personnes :</label>
+                <input type="number" id="nbrPersonne"  name="nombrepersonnes" required><br><br>
 
                 <label for="typechambre"> Type Chambre :</label>
-                <select name="typechambre" id="typechambre" required>
+                <select   name="type_chambre" id="typechambre" required>
                     <option value="simple">Chambre Simple</option>
                     <option value="double">Chambre Double</option>
                     <option value="suite">Suite Prestige</option>
                 </select><br><br>
     
-                <button type="submit" onclick="">Vérifier disponibilité</button>
+                <button type="submit">Vérifier disponibilité</button>
             </form>
         </div>
     </div>
@@ -269,71 +270,6 @@
             // Ne pas cacher le bouton, donc cette ligne est supprimée.
         });
 
-
-       // Classe Chambre
-       class Chambre {
-            constructor(type, capacite, prix) {
-                this.type = type;
-                this.capacite = capacite;
-                this.prix = prix;
-            }
-
-            // Méthode pour afficher les détails d'une chambre
-            afficherDetail(dateArrivee, dateDepart) {
-                // Vérifier la disponibilité (en simplifiant, on suppose que toutes les chambres sont disponibles pour la démonstration)
-                if (this.estDisponible(dateArrivee, dateDepart)) {
-                    return `Chambre ${this.type.charAt(0).toUpperCase() + this.type.slice(1)}\nCapacité: ${this.capacite} personnes\nPrix par nuit: ${this.prix}€\nDisponible du ${dateArrivee} au ${dateDepart}`;
-                } else {
-                    return `La chambre ${this.type} n'est pas disponible pour les dates sélectionnées.`;
-                }
-            }
-
-            // Méthode pour vérifier si une chambre est disponible
-            estDisponible(dateArrivee, dateDepart) {
-                // Ici, tu peux implémenter une logique de vérification avec un tableau ou une base de données
-                // Pour cet exemple, on suppose que toutes les chambres sont disponibles
-                return true;  // Toutes les chambres sont considérées comme disponibles
-            }
-        }
-
-        // Fonction pour vérifier la disponibilité et affecter une chambre
-        function verifierDisponibilite(event) {
-            event.preventDefault(); // Empêche l'envoi du formulaire par défaut
-
-            // Récupérer les valeurs saisies dans le formulaire
-            const dateArrivee = document.getElementById('nom').value;
-            const dateDepart = document.getElementById('date').value;
-            const nbrPersonne = parseInt(document.getElementById('nbrPersonne').value);
-            const typeChambre = document.getElementById('typechambre').value;
-
-            // Définir les chambres disponibles
-            const chambreSimple = new Chambre("simple", 2, 80, 1);
-            const chambreDouble = new Chambre("double", 4, 120, 2);
-            const chambreSuite = new Chambre("suite", 6, 200, 3);
-
-            let message = '';
-
-            // Vérifier le type de chambre et le nombre de personnes
-            let chambreAttribuee = null;
-            if (typeChambre === 'simple' && nbrPersonne <= chambreSimple.capacite) {
-                chambreAttribuee = chambreSimple;
-            } else if (typeChambre === 'double' && nbrPersonne <= chambreDouble.capacite) {
-                chambreAttribuee = chambreDouble;
-            } else if (typeChambre === 'suite' && nbrPersonne <= chambreSuite.capacite) {
-                chambreAttribuee = chambreSuite;
-            } else {
-                message = 'Le nombre de personnes dépasse la capacité maximale de la chambre choisie.';
-            }
-
-            // Si une chambre est attribuée, vérifier la disponibilité et afficher les détails
-            if (chambreAttribuee) {
-                message = chambreAttribuee.afficherDetail(dateArrivee, dateDepart);
-            }
-
-            // Afficher le message à l'utilisateur
-            alert(message);
-
-        }
     </script>
     <div>
         <h1 style="text-align: center; margin-top: 20px;">TetraVilla - L'Art de l'Hospitalité</h1>
@@ -349,7 +285,7 @@
 
     <div class="gallery">
         <div class="img-container">
-            <img src="/img/hotel1.jpeg" alt="TetraVilla Vue 1">
+            <img src="img/hotel1.jpeg" alt="TetraVilla Vue 1">
             <p class="img-description">
                 Idéale pour les voyageurs en solo ou les séjours d'affaires, notre chambre simple offre un espace fonctionnel et chaleureux.
                  Profitez d’un lit douillet, d’une décoration moderne et de toutes les commodités essentielles pour un séjour agréable.
@@ -357,7 +293,7 @@
         </div>
 
         <div class="img-container">
-            <img src="/img/hotel2.jpg" alt="TetraVilla Vue 2">
+            <img src="img/hotel2.jpg" alt="TetraVilla Vue 2">
             <p class="img-description">
                 Spacieuse et soigneusement aménagée, notre chambre double est parfaite pour les couples ou les amis en quête de confort.
                  Son ambiance cosy et son mobilier raffiné vous garantissent des moments de détente inoubliables.
@@ -365,7 +301,7 @@
         </div>
 
         <div class="img-container">  
-            <img src="/img/hotel3.jpg" alt="TetraVilla Vue 3">
+            <img src="img/hotel3.jpg" alt="TetraVilla Vue 3">
             <p class="img-description">
                 Offrez-vous une expérience unique dans notre Suite Prestige, où chaque détail est pensé pour votre bien-être.
                  Profitez d’un espace généreux, d’un coin salon élégant et d’équipements haut de gamme pour un séjour inoubliable.
