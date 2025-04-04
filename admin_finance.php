@@ -34,7 +34,8 @@ $departements = [
     "Sécurité" => "imag/securite.jpeg",
     "Service" => "imag/service.jpeg",
     "Restauration" => "imag/restauration.jpeg",
-];
+    "Stock" => "imag/stock.jpeg",
+]; 
 
 // Message de succès ou d'erreur
 $message = "";
@@ -78,56 +79,87 @@ if ($sectionActive === 'factures') {
 // Traitement de la distribution (si le formulaire est soumis)
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['distribuer'])) {
     $totalDistribue = 0;
-    foreach ($departements as $dep => $image) {
-        $montant = floatval($_POST["montant_$dep"] ?? 0);
-        if ($montant > 0) {
-            $totalDistribue += $montant;
-            // Vérifier si le budget est suffisant
-            if ($totalDistribue <= $agent['monnaieFinance']) {
-                // Mettre à jour la monnaie du département
-                $sql = "UPDATE agent_departement ad
-                        JOIN departement d ON ad.id_dep = d.id_dep
-                        SET ad.monnaieDep = ad.monnaieDep + ?
-                        WHERE d.nom_dep = ?";
-                $stmt = $conn->prepare($sql);
-                if ($stmt) {
-                    $stmt->bind_param("ds", $montant, $dep);
-                    $stmt->execute();
-                    $stmt->close();
+    $montantStock = 0; // Variable pour stocker le montant distribué au département "Stock"
 
-                    // Enregistrer la transaction avec id_agent_financier et id_agent_departement
-                    $sql_trans = "INSERT INTO `transaction` (id_agent_financier, id_agent_departement, montant_trans, date_trans, typeTrans) 
-                                  SELECT ?, ad.id_agentd, ?, NOW(), 'Distribution' 
-                                  FROM agent_departement ad 
-                                  JOIN departement d ON ad.id_dep = d.id_dep 
-                                  WHERE d.nom_dep = ?";
-                    $stmt_trans = $conn->prepare($sql_trans);
-                    if ($stmt_trans) {
-                        $stmt_trans->bind_param("ids", $user_id, $montant, $dep);
-                        $stmt_trans->execute();
-                        $stmt_trans->close();
+    // Démarrer une transaction pour garantir la cohérence des mises à jour
+    $conn->begin_transaction();
+
+    try {
+        foreach ($departements as $dep => $image) {
+            $montant = floatval($_POST["montant_$dep"] ?? 0);
+            if ($montant > 0) {
+                $totalDistribue += $montant;
+                
+                // Vérifier si le budget est suffisant
+                if ($totalDistribue <= $agent['monnaieFinance']) {
+                    // Mettre à jour la monnaie du département
+                    $sql = "UPDATE agent_departement ad
+                            JOIN departement d ON ad.id_dep = d.id_dep
+                            SET ad.monnaieDep = ad.monnaieDep + ?
+                            WHERE d.nom_dep = ?";
+                    $stmt = $conn->prepare($sql);
+                    if ($stmt) {
+                        $stmt->bind_param("ds", $montant, $dep);
+                        $stmt->execute();
+                        $stmt->close();
+
+                        // Enregistrer la transaction avec id_agent_financier et id_agent_departement
+                        $sql_trans = "INSERT INTO `transaction` (id_agent_financier, id_agent_departement, montant_trans, date_trans, typeTrans) 
+                                      SELECT ?, ad.id_agentd, ?, NOW(), 'Distribution' 
+                                      FROM agent_departement ad 
+                                      JOIN departement d ON ad.id_dep = d.id_dep 
+                                      WHERE d.nom_dep = ?";
+                        $stmt_trans = $conn->prepare($sql_trans);
+                        if ($stmt_trans) {
+                            $stmt_trans->bind_param("ids", $user_id, $montant, $dep);
+                            $stmt_trans->execute();
+                            $stmt_trans->close();
+
+                            // Si le département est "Stock", stocker le montant pour le transfert
+                            if ($dep === "Stock") {
+                                $montantStock = $montant;
+                            }
+                        } else {
+                            throw new Exception("Erreur lors de l'enregistrement de la transaction: " . $conn->error);
+                        }
                     } else {
-                        $message = "Erreur lors de l'enregistrement de la transaction: " . $conn->error;
-                        break;
+                        throw new Exception("Erreur lors de la préparation de la requête.");
                     }
                 } else {
-                    $message = "Erreur lors de la préparation de la requête.";
-                    break;
+                    throw new Exception("Erreur : Le montant total dépasse votre budget disponible.");
                 }
-            } else {
-                $message = "Erreur : Le montant total dépasse votre budget disponible.";
-                break;
             }
         }
-    }
-    if (empty($message)) {
+
+        // Si un montant a été distribué au département "Stock", le transférer à la table gestionnaire_stock
+        if ($montantStock > 0) {
+            // Mise à jour de la table gestionnaire_stock (exemple avec id_gestionnaire = 1)
+            $sql_stock = "UPDATE gestionnaire_stock SET monnaiestock = monnaiestock + ? WHERE id_gestionnaire = 1";
+            $stmt_stock = $conn->prepare($sql_stock);
+            if ($stmt_stock) {
+                $stmt_stock->bind_param("d", $montantStock);
+                $stmt_stock->execute();
+                $stmt_stock->close();
+            } else {
+                throw new Exception("Erreur lors de la mise à jour du stock: " . $conn->error);
+            }
+        }
+
         // Mettre à jour le budget de l'agent financier
         $sql = "UPDATE agent_financier SET monnaieFinance = monnaieFinance - ? WHERE id_agentf = ?";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("di", $totalDistribue, $user_id);
         $stmt->execute();
         $stmt->close();
+
+        // Valider la transaction
+        $conn->commit();
+
         $message = "Monnaie distribuée avec succès !";
+        if ($montantStock > 0) {
+            $message .= " Dont " . number_format($montantStock, 2) . " DH transférés au stock.";
+        }
+
         // Rafraîchir les données de l'agent
         $sql = "SELECT nom_agentf, prenom_agentf, monnaieFinance FROM agent_financier WHERE id_agentf = ?";
         $stmt = $conn->prepare($sql);
@@ -136,6 +168,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['distribuer'])) {
         $result = $stmt->get_result();
         $agent = $result->fetch_assoc();
         $stmt->close();
+    } catch (Exception $e) {
+        // En cas d'erreur, annuler la transaction
+        $conn->rollback();
+        $message = $e->getMessage();
     }
 }
 
