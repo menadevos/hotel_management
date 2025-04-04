@@ -47,6 +47,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $table = "Gestionnaire_Stock";
             $sql = "SELECT * FROM Gestionnaire_Stock WHERE email_gestionnaire = ?";
             $id_column = "id_gestionnaire";
+            
             break;
         case "rh":
             $table = "RH";
@@ -89,7 +90,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     header("Location: employe.php");
                     break;
                 case "gestionnaire_stock":
-                    header("Location: gestionnaire_stock.php");
+                    header("Location: stock/dashboard_stock2.php");
                     break;
                 case "rh":
                     header("Location: interfaceRH.php");
