@@ -72,14 +72,14 @@ if (isset($_GET['view_id'])) {
         
         body {
             display: flex;
-            background-color: #f1dddd;
+            background-color: #f5f5f5;
         }
         
         /* Sidebar */
         .sidebar {
             width: 250px;
-            background-color: var(--primary-color);
-            color: var(--white);
+            background-color:  #f1dddd;
+            color: #000000;
             height: 100vh;
             position: fixed;
             padding: 20px 0;
@@ -99,7 +99,7 @@ if (isset($_GET['view_id'])) {
             border-radius: 50%;
             object-fit: cover;
             margin-bottom: 15px;
-            border: 3px solid var(--white);
+            border: 3px solid  #000000;
         }
         
         .sidebar-menu {
@@ -113,11 +113,11 @@ if (isset($_GET['view_id'])) {
         }
         
         .sidebar-menu li:hover {
-            background-color: rgba(255, 255, 255, 0.1);
+            background-color: #be9393;
         }
         
         .sidebar-menu a {
-            color: var(--white);
+            color:  #000000;
             text-decoration: none;
             display: flex;
             align-items: center;
@@ -138,6 +138,7 @@ if (isset($_GET['view_id'])) {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            color: #4a4a4a;
             margin-bottom: 30px;
         }
         
