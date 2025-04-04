@@ -44,9 +44,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $id_column = "id_agentf";
             break;
         case "gestionnaire_stock":
-            $table = "Gestionnaire_Stock";
-            $sql = "SELECT * FROM Gestionnaire_Stock WHERE email_gestionnaire = ? AND password = ?";
+            $table = "Gestionnaire_Stock"; 
+
+            $sql = "SELECT * FROM Gestionnaire_Stock WHERE email_gestionnaire = ? AND password_gest = ? ";
+
             $id_column = "id_gestionnaire";
+            
             break;
         case "rh":
             $table = "RH";
@@ -61,9 +64,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Prepare and execute the statement
     $stmt = $conn->prepare($sql);
     if ($stmt) {
-        // Bind parameters (email and password for all roles except employe)
-        if ($role == "employe") {
-            $stmt->bind_param("s", $email); // Only email for Employe
+
+        
+        // Bind parameters (email and password, except where password is not applicable)
+        if ($role == "employe" ) {
+            $stmt->bind_param("s", $email); // Only email for tables without password
+
         } else {
             $stmt->bind_param("ss", $email, $password); // Email and password for other roles
         }
@@ -89,7 +95,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     header("Location: employe.php");
                     break;
                 case "gestionnaire_stock":
-                    header("Location: stock/dashboard_stock.php");
+                    header("Location: stock/dashboard_stock2.php");
+
                     break;
                 case "rh":
                     header("Location: interfaceRH.php");
