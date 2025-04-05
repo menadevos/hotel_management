@@ -241,7 +241,7 @@ $conn->close();
 <body>
     <div class="container">
         <header>
-            <h1>Mes Réservations</h1>
+            <h1>Ma Réservation</h1>
             <p class="subtitle">Retrouvez ici l'historique de vos séjours chez Tetravilla</p>
         </header>
         
