@@ -323,7 +323,7 @@ $total = $total_chambre + $total_services + $total_paquets;
             <div class="info-item">
                 <span class="info-label">Chambre réservée:</span>
                 <span class="info-value">
-                    <?= htmlspecialchars($reservation_data['id_chambre']) ?>
+                    id_chambre : <?= htmlspecialchars($reservation_data['id_chambre']) ?>
                     (<?= htmlspecialchars($reservation_data['type_chambre'] ?? '') ?>)
                     - <?= htmlspecialchars($reservation_data['tarif']) ?> MAD/nuit
                 </span>

@@ -1,18 +1,17 @@
 <?php
 session_start();
-
 if (!isset($_SESSION['client_id'])) {
-    header("Location: login_user.html");
-    exit;
+    header("Location: login_client.php");
+    exit();
 }
+
+$client_id = $_SESSION['client_id'];
 
 $conn = new mysqli("localhost", "root", "", "tetravilla");
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// Récupérer seulement les réservations confirmées
-$client_id = $_SESSION['client_id'];
 $sql = "SELECT r.id_reservation, r.date_arrivee, r.date_depart, 
                ch.type_chambre, ch.tarif, t.id_trans
         FROM reservation r
@@ -297,6 +296,9 @@ $conn->close();
                         <div class="card-footer">
                             <a href="telecharger_recu_reservation.php?reservation_id=<?= $reservation['id_reservation'] ?>&transaction_id=<?= $reservation['id_trans'] ?>" class="download-btn">
                                 <i class="fas fa-file-pdf"></i> Télécharger le reçu
+                            </a>
+                            <a href="home.html" class="logout-btn">
+                                <i class="fas fa-sign-out-alt"></i> Log out
                             </a>
                         </div>
                     </div>

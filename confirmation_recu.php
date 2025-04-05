@@ -98,18 +98,10 @@ if (!file_exists($pdf_path) || !preg_match('/^Reçu_Tetravilla_\d+\.pdf$/', $fil
         <a href="telechargement_recu_reser.php?file=<?= urlencode($filename) ?>" class="download-btn" id="downloadBtn">
             <i class="fas fa-file-pdf"></i> Télécharger le reçu
         </a>
-        
-        <p class="redirect-message">Vous serez redirigé automatiquement vers votre historique après le téléchargement.</p>
+       
     </div>
 
     <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
-    <script>
-        document.getElementById('downloadBtn').addEventListener('click', function(e) {
-            // Délai avant la redirection
-            setTimeout(function() {
-                window.location.href = "historique_reservations.php?id_client=<?= $client_id ?>";
-            }, 1000); // 1 seconde après le clic
-        });
-    </script>
+
 </body>
 </html>
