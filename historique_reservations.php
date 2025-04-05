@@ -95,15 +95,17 @@ $conn->close();
         }
         
         .reservations-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 2rem;
-        }
-        
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 2rem;
+    }
+            
         .reservation-card {
             background: white;
             border-radius: var(--radius);
             box-shadow: var(--shadow);
+            width: 400px;
             overflow: hidden;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         
