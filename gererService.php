@@ -16,6 +16,7 @@ if ($conn->connect_error) {
 $conn->begin_transaction();
 
 try {
+    
     // Obtenir dynamiquement l'ID du service de type restauration
     $queryRestauration = $conn->query("SELECT id_service FROM service WHERE type_service = 'restauration' LIMIT 1");
     if (!$queryRestauration || $queryRestauration->num_rows == 0) {
@@ -66,11 +67,11 @@ try {
     echo "<div style='text-align: center; padding: 50px;'>";
     echo "<h2 style='color: green;'>Enregistrement réussi!</h2>";
     echo "<p>Vos services ont bien été enregistrés.</p>";
-    echo "<a href='infospersonnels.php' style='display: inline-block; margin-top: 20px; padding: 10px 20px; background: #4CAF50; color: white; text-decoration: none; border-radius: 5px;'>Voir ma réservation</a>";
+    echo "<a href='infospersonnels.php?id_reservation=$reservationId' style='display: inline-block; margin-top: 20px; padding: 10px 20px; background: #4CAF50; color: white; text-decoration: none; border-radius: 5px;'>Voir ma réservation</a>";
     echo "</div>";
 
     // Redirection automatique après 5 secondes
-    echo "<script>setTimeout(() => { window.location.href = 'infospersonnels.php'; }, 5000);</script>";
+    echo "<script>setTimeout(() => { window.location.href = 'infospersonnels.php?id_reservation=$reservationId'; }, 5000);</script>";
 
 } catch (Exception $e) {
     $conn->rollback();

@@ -1,3 +1,14 @@
+<?php
+session_start();
+$id_client = $_GET['id_client'] ?? null;
+$isLoggedIn = $id_client !== null;
+$_SESSION['client_id'] = $id_client;
+$id_reservation = $_GET['id_reservation'] ?? null;
+if (!$id_reservation) {
+    die("<h1>Erreur : Aucune réservation trouvée.</h1>");
+}
+
+?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -54,6 +65,15 @@
         button:hover {
             background: #218838;
         }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .warning {
+            color: red;
+            font-weight: bold;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -61,7 +81,7 @@
 <div class="container">
     <h2>Réservation - Informations du Client</h2>
 
-    <form action="traitement.php" method="POST">
+    <form action="recap.php?id_reservation=<?php echo $id_reservation ?>&client_id=<?php echo $id_client ?>" method="POST">
 
         <!-- Partie 1: Informations du Client -->
         <div class="section">
@@ -93,16 +113,22 @@
                 🔹 **Créer un compte vous permet de consulter l’historique de vos réservations !**
             </p>
             <p class="info-text">
-                Vous n'avez pas de compte ? creer le maintenant! <a href="signup_user.html">S'inscrire ici</a>
+                Vous n'avez pas de compte ? creer le maintenant! <a href="signup_user.php?id_reservation=<?php echo $id_reservation ?>">S'inscrire ici</a>
             </p>
 
             <p class="info-text">
-                Déjà un compte ? <a href="login_user.html">Connectez-vous ici</a>
+                Déjà un compte ? <a href="login_user.html?id_reservation=<?php echo $id_reservation ?>">Connectez-vous ici</a>
             </p>
         </div>
 
+         <!-- Afficher un message si non connecté -->
+         <?php if (!$isLoggedIn): ?>
+            <p class="warning">⚠️ Vous devez être connecté pour continuer la réservation.</p>
+        <?php endif; ?>
+
         <!-- Bouton de validation -->
-        <button type="submit">Continuer la réservation</button>
+        <button type="submit" <?php echo !$isLoggedIn ? 'disabled' : ''; ?> >Continuer la réservation</button>
+
     </form>
 </div>
 

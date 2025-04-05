@@ -6,11 +6,15 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 // recuperer les infos du client 
-// Récupérer les infos client depuis le formulaire POST
+
 $nom = $_POST['nom'] ?? '';
 $prenom = $_POST['prenom'] ?? '';
 $email = $_POST['email'] ?? '';
 $tel = $_POST['tel'] ?? '';
+$reservation_id = $_GET['id_reservation'] ?? null;
+if (!$reservation_id) {
+    die("<h1>Erreur : Aucune réservation trouvée.</h1>");
+}
 
 // recuperer id du client 
 $client_id = $_SESSION['client_id'] ?? null;
@@ -19,7 +23,7 @@ if (!$client_id) {
 }
 
 // Récupérer les détails de la réservation
-$reservation_id = $_SESSION['id_reservation'];
+$reservation_id = $_GET['id_reservation'];
 $reservation_query = "SELECT r.*, c.type_chambre, c.tarif
                       FROM reservation r
                       JOIN chambre c ON r.id_chambre = c.id_chambre
@@ -391,7 +395,7 @@ $total = $total_chambre + $total_services + $total_paquets;
         <div class="payment-section">
             <h2><i class="fas fa-credit-card"></i> Informations de paiement</h2>
             
-            <form id="payment-form" action="traitement_paiement.php?id_reservation=<?= $reservation_id ?>&total=<?= $total ?>" " method="POST">
+            <form id="payment-form" action="traitement_paiement.php?id_reservation=<?= $reservation_id ?>&total=<?= $total ?>" method="POST">
                 <input type="hidden" name="reservation_id" value="<?= $reservation_id ?>">
                 <input type="hidden" name="montant_total" value="<?= $total ?>">
                 
