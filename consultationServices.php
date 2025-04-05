@@ -13,7 +13,7 @@ if ($conn->connect_error) {
 }
 
 // Requête pour récupérer les services disponibles
-$sqlServices = "SELECT nom_service, description,type_service,prix FROM service";
+$sqlServices = "SELECT id_service,nom_service , description,type_service,prix FROM service";
 $resultServices = $conn->query($sqlServices);
 
 if ($resultServices && $resultServices->num_rows > 0) {
@@ -54,7 +54,7 @@ if ($resultServices && $resultServices->num_rows > 0) {
         } else {
             // Affichage standard pour les autres services
             echo "<label style='display: flex; align-items: center; gap: 10px;'>";
-            echo "<input type='checkbox' name='services[]' value='{$service['nom_service']}'>";
+            echo "<input type='checkbox' name='services[]' value='{$service['id_service']}'>";
             echo "Sélectionner ce service";
             echo "</label>";
         }

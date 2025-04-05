@@ -17,11 +17,11 @@ $conn->begin_transaction();
 
 try {
     // Obtenir dynamiquement l'ID du service de type restauration
-    $queryRestauration = $conn->query("SELECT id FROM service WHERE type_service = 'restauration' LIMIT 1");
+    $queryRestauration = $conn->query("SELECT id_service FROM service WHERE type_service = 'restauration' LIMIT 1");
     if (!$queryRestauration || $queryRestauration->num_rows == 0) {
         throw new Exception("Le service de restauration est introuvable.");
     }
-    $idRestauration = $queryRestauration->fetch_assoc()['id'];
+    $idRestauration = $queryRestauration->fetch_assoc()['id_service'];
 
     // Traitement des services normaux (hors restauration)
     if (isset($_POST['services']) && is_array($_POST['services'])) {
@@ -66,18 +66,18 @@ try {
     echo "<div style='text-align: center; padding: 50px;'>";
     echo "<h2 style='color: green;'>Enregistrement réussi!</h2>";
     echo "<p>Vos services ont bien été enregistrés.</p>";
-    echo "<a href='infospersonnel.php' style='display: inline-block; margin-top: 20px; padding: 10px 20px; background: #4CAF50; color: white; text-decoration: none; border-radius: 5px;'>Voir ma réservation</a>";
+    echo "<a href='infospersonnels.php' style='display: inline-block; margin-top: 20px; padding: 10px 20px; background: #4CAF50; color: white; text-decoration: none; border-radius: 5px;'>Voir ma réservation</a>";
     echo "</div>";
 
     // Redirection automatique après 5 secondes
-    echo "<script>setTimeout(() => { window.location.href = 'infospersonnel.php'; }, 5000);</script>";
+    echo "<script>setTimeout(() => { window.location.href = 'infospersonnels.php'; }, 5000);</script>";
 
 } catch (Exception $e) {
     $conn->rollback();
     echo "<div style='text-align: center; padding: 50px; color: red;'>";
     echo "<h2>Erreur lors de l'enregistrement</h2>";
     echo "<p>" . $e->getMessage() . "</p>";
-    echo "<a href='services.php' style='display: inline-block; margin-top: 20px; padding: 10px 20px; background: #f44336; color: white; text-decoration: none; border-radius: 5px;'>Retour aux services</a>";
+    echo "<a href='consultationServices.php' style='display: inline-block; margin-top: 20px; padding: 10px 20px; background: #f44336; color: white; text-decoration: none; border-radius: 5px;'>Retour aux services</a>";
     echo "</div>";
 }
 

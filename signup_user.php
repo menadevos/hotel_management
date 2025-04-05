@@ -1,6 +1,5 @@
 <?php
 session_start();
-// connexion a la base de donnee
 // Connexion à la base de données
 $conn = new mysqli('localhost', 'root', '', 'tetravilla');
 if ($conn->connect_error) {
@@ -13,11 +12,11 @@ $nom = $_POST['nom'] ?? null;
 $prenom = $_POST['prenom'] ?? null;
 $email = $_POST['email'] ?? null;
 $telephone = $_POST['telephone'] ?? null;
-$motdepasse = $_POST['motdepasse'] ?? null;
+$motdepasse = $_POST['pass'] ?? null;
 // Insérer le client dans la base de données
 $sql = "INSERT INTO client (prenom, nom, tel, email, password) VALUES (?, ?, ?, ?, ?)";
 $stmt = $conn->prepare($sql);
-$stmt->bind_param("sssss", $prenom, $nom, $tel, $email, $password);
+$stmt->bind_param("sssss", $prenom, $nom, $telephone, $email, $motdepasse);
 
 if ($stmt->execute()) {
     // Récupérer l'ID du client inséré
