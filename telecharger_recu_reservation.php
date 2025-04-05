@@ -3,10 +3,10 @@ session_start();
 
 // Vérification de l'authentification
 if (!isset($_SESSION['client_id'])) {
-    header("Location: login_user.html");
+    header("Location: login_user.php");
     exit;
 }
-
+$client_id = $_SESSION['client_id'];
 require_once 'vendor/autoload.php';
 
 use Mpdf\Mpdf;
@@ -74,8 +74,6 @@ while ($row = $result_paquets->fetch_assoc()) {
 }
 $stmt_paquets->close();
 
-$conn->close();
-
 // Calcul des dates et durées
 $date_arrivee = new DateTime($reservation['date_arrivee']);
 $date_depart = new DateTime($reservation['date_depart']);
@@ -85,6 +83,20 @@ $prix_chambre = $reservation['tarif'] * $nuits;
 // Initialisation des totaux
 $prix_services = 0;
 $prix_paquets = 0;
+
+// Préparation des détails pour la table recu
+$details_recu = "Réservation #$reservation_id - Chambre: {$reservation['type_chambre']} - ";
+$details_recu .= "Du ".date('d/m/Y', strtotime($reservation['date_arrivee']))." au ".date('d/m/Y', strtotime($reservation['date_depart']))." - ";
+$details_recu .= "Total: ".number_format($total, 2)." DH";
+
+// Insertion dans la table recu avant de générer le PDF
+$sql_insert_recu = "INSERT INTO recu (details, type, DateEmission, id_transaction) 
+                    VALUES (?, 'réservation', NOW(), ?)";
+$stmt_insert = $conn->prepare($sql_insert_recu);
+$stmt_insert->bind_param("si", $details_recu, $transaction_id);
+$stmt_insert->execute();
+$recu_id = $stmt_insert->insert_id;
+$stmt_insert->close();
 
 // Préparation du contenu HTML
 try {
@@ -195,14 +207,24 @@ try {
     </div>';
     
     $mpdf->WriteHTML($html);
-    
-    // Nom du fichier
-    $filename = "Reçu_Tetravilla_".$reservation_id.".pdf";
-    
-    // Téléchargement direct
-    $mpdf->Output($filename, 'D');
 
-} catch (Exception $e) {
+    // Enregistrer le PDF sur le serveur
+    $pdf_directory = 'recus_reservations/';
+    if (!file_exists($pdf_directory)) {
+        mkdir($pdf_directory, 0755, true);
+    }
+    
+    $filename = "Reçu_Tetravilla_".$reservation_id.".pdf";
+    $filepath = $pdf_directory . $filename;
+    $mpdf->Output($filepath, 'F');
+    
+    // Fermer la connexion
+    $conn->close();
+    
+    // Rediriger vers une page de confirmation avec bouton de téléchargement
+    header("Location: confirmation_recu.php?file=".urlencode($filename)."&id_client=".$client_id);
+    exit;
+    } catch (Exception $e) {
     die("Erreur lors de la génération du reçu: " . $e->getMessage());
 }
 ?>
