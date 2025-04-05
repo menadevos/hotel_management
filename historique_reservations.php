@@ -7,7 +7,7 @@ if (!isset($_SESSION['client_id'])) {
 
 $client_id = $_SESSION['client_id'];
 
-$conn = new mysqli("localhost", "root", "", "tetravilla");
+$conn = new mysqli("localhost", "root", "", "hotel");
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }

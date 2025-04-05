@@ -12,7 +12,7 @@ require_once 'vendor/autoload.php';
 use Mpdf\Mpdf;
 
 // Connexion à la base de données
-$conn = new mysqli("localhost", "root", "", "tetravilla");
+$conn = new mysqli("localhost", "root", "", "hotel");
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }

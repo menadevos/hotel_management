@@ -1,7 +1,7 @@
 <?php
 session_start();
 // Connexion à la base de données
-$conn = new mysqli('localhost', 'root', '', 'tetravilla');
+$conn = new mysqli('localhost', 'root', '', 'hotel');
 if ($conn->connect_error) {
     die("<h1>Erreur : Connexion à la base de données échouée.</h1>");
 }

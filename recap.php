@@ -1,7 +1,7 @@
 <?php
 session_start();
 // Connexion à la base de données
-$conn = new mysqli('localhost', 'root', '', 'tetravilla');
+$conn = new mysqli('localhost', 'root', '', 'hotel');
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
@@ -323,7 +323,7 @@ $total = $total_chambre + $total_services + $total_paquets;
             <div class="info-item">
                 <span class="info-label">Chambre réservée:</span>
                 <span class="info-value">
-                    id_chambre : <?= htmlspecialchars($reservation_data['id_chambre']) ?>
+                    id_chambre :<?= htmlspecialchars($reservation_data['id_chambre']) ?>
                     (<?= htmlspecialchars($reservation_data['type_chambre'] ?? '') ?>)
                     - <?= htmlspecialchars($reservation_data['tarif']) ?> MAD/nuit
                 </span>
