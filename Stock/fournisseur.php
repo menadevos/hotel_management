@@ -1,258 +1,288 @@
 <?php
+ // Ajout de la gestion de session pour les messages
 require_once "connect_base.php"; 
 
-// Vérifier si une action a été envoyée
-
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-  
-    $success = false;
-    $message = "";
-
-
-
-if (isset($_POST['action-type'])){
-    $actionType = $_POST['action-type']; // 'add' pour ajout, 'update' pour modification
-    // Récupérer les données du formulaire
-    
- 
-    $fournisseurNom= $_POST['fournisseur-nom'];
-    $fournisseurPrenom = $_POST['fournisseur-prenom'];
-    $fournisseurEmail = $_POST['fournisseur-email'];
-    $fournisseurTel = $_POST['fournisseur-tel'];
-    $productAdresse = $_POST['fournisseur-adresse']; 
-    $productNumCompte= $_POST['fournisseur-numCompte']; 
-    if ($actionType == 'add') {
-        // Ajouter ke fournisseur à la base de données
-        $sql = "INSERT INTO fournisseur (nom_fournisseur,prenom_fournisseur ,email , adresse , teleF,numCompte ) 
-                VALUES (:nom, :prenom, :email, :adresse , :tel , :numCompte)";
-      $stmt = $conn->prepare($sql);
-      $stmt->bindParam(':nom', $fournisseurNom);
-      $stmt->bindParam(':prenom', $fournisseurPrenom);
-      $stmt->bindParam(':email', $fournisseurEmail);
-      $stmt->bindParam(':adresse', $productAdresse);
-      $stmt->bindParam(':tel', $fournisseurTel);
-      $stmt->bindParam(':numCompte', $productNumCompte);
-        
-        if ($stmt->execute()) {
-            $success = true;
-            $message =  "Fournisseur ajouté avec succès !";
-        } 
-        else {
-            $message = "Erreur lors de l'ajout du fournisseur.";
-        }
-    } elseif ($actionType == 'update') {
-           // Mise à jour d'un fournisseur existant
-    $fournisseurId = $_POST['fournisseur-id']; // Utiliser l'id du fournisseur pour la mise à jour
-
-    // Mettre à jour le fournisseur
-    $sql = "UPDATE fournisseur SET nom_fournisseur = :nom, prenom_fournisseur = :prenom, email = :email, adresse = :adresse, teleF = :tel, numCompte = :numCompte WHERE id_fournisseur = :id";
-    $stmt = $conn->prepare($sql);
-    $stmt->bindParam(':nom', $fournisseurNom);
-    $stmt->bindParam(':prenom', $fournisseurPrenom);
-    $stmt->bindParam(':email', $fournisseurEmail);
-    $stmt->bindParam(':adresse', $productAdresse);
-    $stmt->bindParam(':tel', $fournisseurTel);
-    $stmt->bindParam(':numCompte', $productNumCompte);
-    $stmt->bindParam(':id', $fournisseurId);
-
-    // Exécuter la requête
-    if ($stmt->execute()) {
-        $success = true;
-        $message =  "Fournisseur mis à jour avec succès !";
-    } else {
-        $message =  "Erreur lors de la mise à jour du fournisseur.";
-    }
-    }
-    
- 
+// Récupérer le type_stock passé en paramètre
+$type_stock = $_GET['type_stock'] ?? '';
+if(empty($type_stock)) {
+    die("Type de stock non spécifié");
 }
-    
 
-    // Afficher le message approprié
-    if ($success) {
-        echo '<div class="success-message"><i class="fas fa-check-circle"></i> ' . $message . '</div>';
-    } else {
-        echo '<div class="error-message"><i class="fas fa-exclamation-circle"></i> ' . $message . '</div>';
+
+
+// Vérifier si une action a été envoyée
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // Gestion de la suppression
+    if(isset($_POST['delete'])) {
+        $fournisseurId = $_POST['fournisseur_id'];
+        
+        try {
+            // Commencer une transaction
+            $conn->beginTransaction();
+            
+            // 1. Mettre à jour les produits pour les dissocier du fournisseur
+            $sqlUpdateProducts = "UPDATE produit SET id_fournisseur = NULL WHERE id_fournisseur = :id";
+            $stmtUpdate = $conn->prepare($sqlUpdateProducts);
+            $stmtUpdate->bindParam(':id', $fournisseurId);
+            $stmtUpdate->execute();
+            
+            // 2. Supprimer le fournisseur
+            $sqlDelete = "DELETE FROM fournisseur WHERE id_fournisseur = :id AND categorie_fournit = :categorie";
+            $stmtDelete = $conn->prepare($sqlDelete);
+            $stmtDelete->bindParam(':id', $fournisseurId);
+            $stmtDelete->bindParam(':categorie', $type_stock);
+            $stmtDelete->execute();
+            
+            // Valider la transaction
+            $conn->commit();
+            
+            $_SESSION['success'] = "Fournisseur supprimé avec succès. Les produits associés n'ont plus de fournisseur.";
+        } catch (PDOException $e) {
+            // Annuler la transaction en cas d'erreur
+            $conn->rollBack();
+            $_SESSION['error'] = "Erreur lors de la suppression : " . $e->getMessage();
+        }
+        
+        header("Location: dashboard_stock2.php?page=fournisseur&type_stock=".urlencode($type_stock)."&id=".urlencode($id_gest));
+        exit;
+
     }
+    // Gestion de l'ajout/modification
+    elseif(isset($_POST['action-type'])) {
+        $actionType = $_POST['action-type'];
+        $fournisseurNom = $_POST['fournisseur-nom'];
+        $fournisseurPrenom = $_POST['fournisseur-prenom'];
+        $fournisseurEmail = $_POST['fournisseur-email'];
+        $fournisseurTel = $_POST['fournisseur-tel'];
+        $productAdresse = $_POST['fournisseur-adresse']; 
+        $productNumCompte = $_POST['fournisseur-numCompte'];
+
+        try {
+            if ($actionType == 'add') {
+                // Ajouter le fournisseur avec la catégorie automatique
+                $sql = "INSERT INTO fournisseur (nom_fournisseur, prenom_fournisseur, email, adresse, teleF, numCompte, categorie_fournit) 
+                        VALUES (:nom, :prenom, :email, :adresse, :tel, :numCompte, :categorie)";
+                $stmt = $conn->prepare($sql);
+                $stmt->bindParam(':nom', $fournisseurNom);
+                $stmt->bindParam(':prenom', $fournisseurPrenom);
+                $stmt->bindParam(':email', $fournisseurEmail);
+                $stmt->bindParam(':adresse', $productAdresse);
+                $stmt->bindParam(':tel', $fournisseurTel);
+                $stmt->bindParam(':numCompte', $productNumCompte);
+                $stmt->bindParam(':categorie', $type_stock);
+                
+                if($stmt->execute()) {
+                    $_SESSION['success'] = "Fournisseur ajouté avec succès !";
+                }
+            } 
+            elseif ($actionType == 'update') {
+                $fournisseurId = $_POST['fournisseur-id'];
+                
+                // Mise à jour sans changer la catégorie
+                $sql = "UPDATE fournisseur SET 
+                        nom_fournisseur = :nom, 
+                        prenom_fournisseur = :prenom, 
+                        email = :email, 
+                        adresse = :adresse, 
+                        teleF = :tel, 
+                        numCompte = :numCompte 
+                        WHERE id_fournisseur = :id AND categorie_fournit = :categorie";
+                $stmt = $conn->prepare($sql);
+                $stmt->bindParam(':nom', $fournisseurNom);
+                $stmt->bindParam(':prenom', $fournisseurPrenom);
+                $stmt->bindParam(':email', $fournisseurEmail);
+                $stmt->bindParam(':adresse', $productAdresse);
+                $stmt->bindParam(':tel', $fournisseurTel);
+                $stmt->bindParam(':numCompte', $productNumCompte);
+                $stmt->bindParam(':id', $fournisseurId);
+                $stmt->bindParam(':categorie', $type_stock);
+                
+                if($stmt->execute()) {
+                    $_SESSION['success'] = "Fournisseur mis à jour avec succès !";
+                }
+            }
+        } catch (PDOException $e) {
+            $_SESSION['error'] = "Erreur : " . $e->getMessage();
+        }
+        
+        // Redirection après ajout/modification
+        header("Location: dashboard_stock2.php?page=fournisseur&type_stock=".urlencode($type_stock)."&id=".urlencode($id_gest));
+        exit;
+    }
+}
+
+// Afficher les messages de session s'ils existent
+if (isset($_SESSION['success'])) {
+    echo '<div class="success-message"><i class="fas fa-check-circle"></i> ' . $_SESSION['success'] . '</div>';
+    unset($_SESSION['success']);
+}
+if (isset($_SESSION['error'])) {
+    echo '<div class="error-message"><i class="fas fa-exclamation-circle"></i> ' . $_SESSION['error'] . '</div>';
+    unset($_SESSION['error']);
 }
 ?>
-            <header>
-            <h1>Consulter Fournisseurs</h1>
-            <div class="logo">
-                <img src="images/maqlog.jpg" alt="TetraVilla Logo" class="logo-img">
-                <span>TetraVilla</span>
-            </div>
-          </header>
-          <!-- Bouton Ajouter un fourn -->
-              <div class="action-buttons">
-                    <a href="ajouter_produit.php" class="btn-add"><i class="fas fa-plus"></i> Ajouter un fourniseur </a>
-                </div>
 
-                <?php
-                //  requête SQL pour obtenir les fournisseurs
-                $sql = "SELECT * FROM fournisseur";
-                $result = $conn->query($sql);
-
-                if ($result->rowCount() > 0) {
-                    ?>
-                    <table>
-                    <thead> 
-            <th>ID du fournisseur</th><th>Nom</th><th>Prénom</th><th>Email</th><th>Téléphone</th><th>Adresse</th><th>Numéro de compte</th><th>Actions</th> 
-        </thead>
-        <tbody> 
-        <?php
-while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
-            $id = $row['id_fournisseur'];
-            $nom = $row['nom_fournisseur'];
-            $prenom = $row['prenom_fournisseur'];
-            $email = $row['email'];
-            $tel = $row['teleF'];
-            $adresse = $row['adresse'];
-            $numCompte = $row['numCompte'];
-            ?>
-            <tr>
-                <td> <?php echo htmlspecialchars($id); ?></td>
-                <td> <?php echo htmlspecialchars($nom); ?></td>
-                <td> <?php echo htmlspecialchars($prenom); ?></td>
-                <td> <?php echo htmlspecialchars($email); ?> </td>
-                <td> <?php echo htmlspecialchars($tel); ?> </td>
-                <td> <?php echo htmlspecialchars($adresse); ?> </td>
-                <td> <?php echo htmlspecialchars($numCompte); ?> </td>
-                <td>
-                    <!-- Ajouter des actions comme "modifier" ou "supprimer" ici -->
-            <a href="modifier_fournisseur.php?id=<?php echo $id; ?>" class="btn-edit">
-                                        <i class="fas fa-edit"></i> Modifier
-                                    </a>
-
- 
-                </td>
-            </tr>
-            <?php
-        }
-        ?>
-        </tbody>
-                    </table>
-                    <?php
-                } else {
-                    echo "Aucun fournisseur existe";
-                }
-                ?>
-            </div>
-
-        
+<header>
+    <h1>Fournisseurs - <?php echo htmlspecialchars($type_stock); ?></h1>
+    <div class="logo">
+        <img src="images/maqlog.jpg" alt="TetraVilla Logo" class="logo-img">
+        <span>TetraVilla</span>
     </div>
+</header>
 
+<div class="action-buttons">
+    <button class="btn-add" onclick="showAddModal()">
+        <i class="fas fa-plus"></i> Ajouter un fournisseur
+    </button>
+</div>
 
+<?php
+// Récupérer les fournisseurs de la catégorie
+$sql = "SELECT * FROM fournisseur WHERE categorie_fournit = :type_stock";
+$stmt = $conn->prepare($sql);
+$stmt->bindParam(':type_stock', $type_stock);
+$stmt->execute();
 
-  <!-- Fenêtre modale -->
-<div id="modal" class="modal">
+if ($stmt->rowCount() > 0) {
+    ?>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nom</th>
+                <th>Prénom</th>
+                <th>Email</th>
+                <th>Téléphone</th>
+                <th>Adresse</th>
+                <th>Numéro compte</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php while ($row = $stmt->fetch(PDO::FETCH_ASSOC)): ?>
+                <tr>
+                    <td><?php echo htmlspecialchars($row['id_fournisseur']); ?></td>
+                    <td><?php echo htmlspecialchars($row['nom_fournisseur']); ?></td>
+                    <td><?php echo htmlspecialchars($row['prenom_fournisseur']); ?></td>
+                    <td><?php echo htmlspecialchars($row['email']); ?></td>
+                    <td><?php echo htmlspecialchars($row['teleF']); ?></td>
+                    <td><?php echo htmlspecialchars($row['adresse']); ?></td>
+                    <td><?php echo htmlspecialchars($row['numCompte']); ?></td>
+                    <td>
+                        <button class="btn-edit" onclick="showEditModal(
+                            <?php echo $row['id_fournisseur']; ?>,
+                            '<?php echo addslashes($row['nom_fournisseur']); ?>',
+                            '<?php echo addslashes($row['prenom_fournisseur']); ?>',
+                            '<?php echo addslashes($row['email']); ?>',
+                            '<?php echo addslashes($row['teleF']); ?>',
+                            '<?php echo addslashes($row['adresse']); ?>',
+                            '<?php echo addslashes($row['numCompte']); ?>'
+                        )">
+                            <i class="fas fa-edit"></i> Modifier
+                        </button>
+                        
+                        <form method="POST" style="display:inline;" action="dashboard_stock2.php?page=fournisseur&type_stock=<?php echo urlencode($type_stock); ?>">
+                            <input type="hidden" name="fournisseur_id" value="<?php echo $row['id_fournisseur']; ?>">
+                            <button type="submit" name="delete" class="btn-delete" 
+                                    onclick="return confirmDelete()">
+                                <i class="fas fa-trash"></i> Supprimer
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            <?php endwhile; ?>
+        </tbody>
+    </table>
+    <?php
+} else {
+    echo "<p>Aucun fournisseur trouvé pour cette catégorie.</p>";
+}
+?>
+
+<!-- Modal avec nouveaux styles -->
+<div id="fournisseurModal" class="modal">
     <div class="modal-content">
-        <span class="close-btn">&times;</span>
-        <h2 id="modal-title">Gestion des Fournisseurs</h2>
-        <form id="modal-form" action="dashboard_stock2.php?page=fournisseur" method="POST">
-            <input type="hidden" id="fournisseur-id" name="fournisseur-id">
-            <input type="hidden" id="action-type" name="action-type"> <!-- Pour identifier si c'est une modification ou un ajout -->
-
-            <label for="fournisseur-nom">Nom du fournisseur :</label>
-            <input type="text" id="fournisseur-nom" name="fournisseur-nom" required>
-
-            <label for="fournisseur-prenom">Prénom :</label>
-            <input type="text" id="fournisseur-prenom" name="fournisseur-prenom" required>
-
-            <label for="fournisseur-email">Email :</label>
-            <input type="email" id="fournisseur-email" name="fournisseur-email" required>
-
-            <label for="fournisseur-tel">Téléphone :</label>
-            <input type="tel" id="fournisseur-tel" name="fournisseur-tel" required>
-
-            <label for="fournisseur-adresse">Adresse :</label>
-            <input type="text" id="fournisseur-adresse" name="fournisseur-adresse" required>
-
-            <label for="fournisseur-numCompte">Numéro de compte :</label>
-            <input type="text" id="fournisseur-numCompte" name="fournisseur-numCompte" required>
-
-            <button type="submit" id="modal-confirm">Confirmer</button>
+        <span class="close-btn" onclick="closeModal()">&times;</span>
+        <h2 id="modal-title">Ajouter un fournisseur</h2>
+        <form method="POST" id="modal-form" action="dashboard_stock2.php?page=fournisseur&type_stock=<?php echo urlencode($type_stock); ?>&id=<?php echo urlencode($id_gest); ?>">
+            <input type="hidden" name="action-type" id="actionType" value="add">
+            <input type="hidden" name="fournisseur-id" id="fournisseurId">
+            <input type="hidden" name="product-category" value="<?php echo htmlspecialchars($type_stock); ?>">
+            
+            <div class="form-group">
+                <label for="fournisseurNom">Nom:</label>
+                <input type="text" id="fournisseurNom" name="fournisseur-nom" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="fournisseurPrenom">Prénom:</label>
+                <input type="text" id="fournisseurPrenom" name="fournisseur-prenom" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="fournisseurEmail">Email:</label>
+                <input type="email" id="fournisseurEmail" name="fournisseur-email" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="fournisseurTel">Téléphone:</label>
+                <input type="tel" id="fournisseurTel" name="fournisseur-tel" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="fournisseurAdresse">Adresse:</label>
+                <input type="text" id="fournisseurAdresse" name="fournisseur-adresse" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="fournisseurNumCompte">Numéro de compte:</label>
+                <input type="text" id="fournisseurNumCompte" name="fournisseur-numCompte" required>
+            </div>
+            
+            <button type="submit" id="modal-confirm" class="btn-submit">Confirmer</button>
         </form>
     </div>
 </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-    const modal = document.getElementById("modal");
-    const modalTitle = document.getElementById("modal-title");
-    const modalForm = document.getElementById("modal-form");
-    const closeModal = document.querySelector(".close-btn");
+// Gestion du modal
+function showAddModal() {
+    document.getElementById('modal-title').textContent = 'Ajouter un fournisseur';
+    document.getElementById('actionType').value = 'add';
+    document.getElementById('fournisseurId').value = '';
+    document.getElementById('modal-form').reset();
+    document.getElementById('fournisseurModal').style.display = 'block';
+    document.getElementById('fournisseurModal').classList.add('show');
+}
 
-    const fournisseurIdField = document.getElementById("fournisseur-id");
-    const fournisseurNomField = document.getElementById("fournisseur-nom");
-    const fournisseurPrenomField = document.getElementById("fournisseur-prenom");
-    const fournisseurEmailField = document.getElementById("fournisseur-email");
-    const fournisseurTelField = document.getElementById("fournisseur-tel");
-    const fournisseurAdresseField = document.getElementById("fournisseur-adresse");
-    const fournisseurNumCompteField = document.getElementById("fournisseur-numCompte");
-    const actionTypeField = document.getElementById("action-type");
+function showEditModal(id, nom, prenom, email, tel, adresse, numCompte) {
+    document.getElementById('modal-title').textContent = 'Modifier le fournisseur';
+    document.getElementById('actionType').value = 'update';
+    document.getElementById('fournisseurId').value = id;
+    document.getElementById('fournisseurNom').value = nom;
+    document.getElementById('fournisseurPrenom').value = prenom;
+    document.getElementById('fournisseurEmail').value = email;
+    document.getElementById('fournisseurTel').value = tel;
+    document.getElementById('fournisseurAdresse').value = adresse;
+    document.getElementById('fournisseurNumCompte').value = numCompte;
+    document.getElementById('fournisseurModal').style.display = 'block';
+    document.getElementById('fournisseurModal').classList.add('show');
+}
 
-    // Fonction pour afficher le modal
-    function showModal(title, action, fournisseur = null) {
-        modalTitle.textContent = title;
-        if (action === "Ajouter") {
-            actionTypeField.value = "add";
-            modalForm.reset(); // Vide les champs si c'est un ajout
-        } else {
-            actionTypeField.value = "update";
-            fournisseurIdField.value = fournisseur.id;
-            fournisseurNomField.value = fournisseur.nom;
-            fournisseurPrenomField.value = fournisseur.prenom;
-            fournisseurEmailField.value = fournisseur.email;
-            fournisseurTelField.value = fournisseur.telephone;
-            fournisseurAdresseField.value = fournisseur.adresse;
-            fournisseurNumCompteField.value = fournisseur.numCompte;
-        }
+function closeModal() {
+    document.getElementById('fournisseurModal').style.display = 'none';
+    document.getElementById('fournisseurModal').classList.remove('show');
+}
 
-        modal.style.display = "block"; // Affiche le modal
+function confirmDelete() {
+    return confirm("Êtes-vous sûr de vouloir supprimer ce fournisseur?\n\nLes produits associés n'auront plus de fournisseur.");
+}
+
+// Fermer si on clique en dehors
+window.onclick = function(event) {
+    const modal = document.getElementById('fournisseurModal');
+    if (event.target == modal) {
+        closeModal();
     }
-
-    // Ouvrir le formulaire d'ajout
-    document.querySelector(".btn-add").addEventListener("click", function (e) {
-        e.preventDefault();
-        showModal("Ajouter un Fournisseur", "Ajouter");
-    });
-
-    // Ouvrir le formulaire de modification
-    document.querySelectorAll(".btn-edit").forEach(btn => {
-        btn.addEventListener("click", function (e) {
-            e.preventDefault();
-            const row = this.closest("tr");
-            const fournisseur = {
-                id: row.cells[0].textContent.trim(),
-                nom: row.cells[1].textContent.trim(),
-                prenom: row.cells[2].textContent.trim(),
-                email: row.cells[3].textContent.trim(),
-                telephone: row.cells[4].textContent.trim(),
-                adresse: row.cells[5].textContent.trim(),
-                numCompte: row.cells[6].textContent.trim(),
-            };
-            showModal("Modifier le Fournisseur", "Modifier", fournisseur);
-        });
-    });
-
-    // Fermer le modal
-    closeModal.addEventListener("click", function () {
-        modal.style.display = "none";
-    });
-
-    // Fermer le modal si on clique en dehors
-    window.addEventListener("click", function (event) {
-        if (event.target === modal) {
-            modal.style.display = "none";
-        }
-    });
-});
-
+}
 </script>
-
-
-
-
-   
-    </script>

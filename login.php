@@ -7,9 +7,9 @@ $host = "localhost"; // Replace with your host if different
 $username = "root";  // Replace with your MySQL username
 $password = "";      // Replace with your MySQL password
 $dbname = "hotel";   // Database name
-
+$port = 4306;         // Port que tu utilises maintenant
 // Create connection
-$conn = new mysqli($host, $username, $password, $dbname);
+$conn = new mysqli($host, $username, $password, $dbname , $port);
 
 // Check connection
 if ($conn->connect_error) {
@@ -49,6 +49,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $id_column = "id_gestionnaire";
             
             break;
+            
         case "rh":
             $table = "RH";
             $sql = "SELECT * FROM RH WHERE emailRH = ? AND motDePasse = ?";
@@ -89,9 +90,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 case "employe":
                     header("Location: employe.php");
                     break;
-                case "gestionnaire_stock":
-                    header("Location: stock/dashboard_stock2.php");
-                    break;
+                
+                    case "gestionnaire_stock":
+                        $type_stock = $user['type_stock'];
+                        $id_gestionnaire = $user[$id_column]; // c'est déjà 'id_gestionnaire'
+                        header("Location: stock/dashboard_stock2.php?type_stock=" . urlencode($type_stock) . "&id=" . urlencode($id_gestionnaire));
+                        break;
                 case "rh":
                     header("Location: interfaceRH.php");
                     break;

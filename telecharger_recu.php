@@ -25,7 +25,10 @@ $sql = "SELECT r.*, t.id_trans, t.montant_trans, t.date_trans, t.typeTrans,
         JOIN transaction t ON r.id_transaction = t.id_trans 
         JOIN facture f ON f.id_transaction = t.id_trans
         WHERE f.id_fac = ? AND f.id_agent_departement = ? AND f.statut = 'Payée'";
-        
+
+
+
+
 $stmt = $conn->prepare($sql);
 if (!$stmt) {
     die("Erreur de préparation: " . $conn->error);
