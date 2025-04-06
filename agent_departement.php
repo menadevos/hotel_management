@@ -4,7 +4,7 @@ session_start();
 // Vérifier si l'utilisateur est connecté et a le rôle "agent_departement"
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'agent_departement') {
     header("Location: login.php");
-    exit;
+    exit;   
 }
 
 // Connexion à la base de données
@@ -869,9 +869,10 @@ $conn->close();
                         <input type="number" name="montant" step="0.01" min="0" required>
                         <label for="type">Type:</label>
                         <select name="type" required>
-                            <option value="Salaire">Salaire</option>
-                            <option value="Fourniture">Fourniture</option>
-                            <option value="Service">Service</option>
+                        <option value="Salaire">Événement organisé par le département</option>
+<option value="Fourniture">Avance accordée à un employé</option>
+<option value="Service">Autres services (précisez les détails dans la description)</option>
+
                         </select>
                         <button type="submit" name="generer_facture" class="generer-btn">Générer Facture</button>
                     </form>
