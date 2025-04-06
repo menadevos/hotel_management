@@ -1,3 +1,15 @@
+<?php
+session_start();
+
+$id_client = $_GET['id_client'] ?? null;
+$isLoggedIn = $id_client !== null;
+$_SESSION['client_id'] = $id_client;
+
+$id_reservation = $_GET['id_reservation'] ?? null;
+if (!$id_reservation) {
+    die("<h1>Erreur : Aucune réservation trouvée.</h1>");
+}
+?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -6,53 +18,96 @@
     <title>Réservation - Informations Client</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            padding: 20px;
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 40px;
             background-color: #f4f4f4;
         }
+
         .container {
-            width: 50%;
+            width: 90%;
+            max-width: 600px;
+            margin: auto;
             background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
         }
+
         h2 {
             text-align: center;
-            color: #333;
+            color: #2c3e50;
+            margin-bottom: 30px;
         }
-        label {
-            font-weight: bold;
-        }
-        input {
-            width: 100%;
-            padding: 8px;
-            margin: 5px 0 15px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
+
         .section {
-            margin-bottom: 20px;
-            padding: 15px;
-            border-radius: 5px;
+            margin-bottom: 30px;
+            padding: 20px;
+            border-radius: 8px;
             background: #f9f9f9;
         }
+
+        h3 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"],
+        input[type="email"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
         .info-text {
             font-size: 14px;
             color: #555;
+            margin: 8px 0;
         }
+
+        .info-text a {
+            color: #007BFF;
+            text-decoration: none;
+        }
+
+        .info-text a:hover {
+            text-decoration: underline;
+        }
+
+        .warning {
+            color: #e74c3c;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 15px;
+        }
+
         button {
+            width: 100%;
+            padding: 12px;
             background: #28a745;
             color: white;
-            padding: 10px;
             border: none;
-            border-radius: 5px;
+            border-radius: 6px;
+            font-size: 16px;
             cursor: pointer;
-            width: 100%;
+            transition: background 0.3s ease;
         }
+
         button:hover {
             background: #218838;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
         }
     </style>
 </head>
@@ -61,7 +116,7 @@
 <div class="container">
     <h2>Réservation - Informations du Client</h2>
 
-    <form action="traitement.php" method="POST">
+    <form action="recap.php?id_reservation=<?php echo $id_reservation ?>&client_id=<?php echo $id_client ?>" method="POST">
 
         <!-- Partie 1: Informations du Client -->
         <div class="section">
@@ -69,40 +124,47 @@
 
             <label for="tel">Téléphone:</label>
             <input type="text" id="tel" name="tel" 
-                   value="<?php echo isset($_GET['tel']) ? htmlspecialchars($_GET['tel']) : ''; ?>" required><br><br>
-    
+                   value="<?php echo isset($_GET['tel']) ? htmlspecialchars($_GET['tel']) : ''; ?>" required>
+
             <label for="prenom">Prénom:</label>
             <input type="text" id="prenom" name="prenom" 
-                   value="<?php echo isset($_GET['prenom']) ? htmlspecialchars($_GET['prenom']) : ''; ?>" required><br><br>
-    
+                   value="<?php echo isset($_GET['prenom']) ? htmlspecialchars($_GET['prenom']) : ''; ?>" required>
+
             <label for="nom">Nom:</label>
             <input type="text" id="nom" name="nom" 
-                   value="<?php echo isset($_GET['nom']) ? htmlspecialchars($_GET['nom']) : ''; ?>" required><br><br>
-    
+                   value="<?php echo isset($_GET['nom']) ? htmlspecialchars($_GET['nom']) : ''; ?>" required>
+
             <label for="email">Email:</label>
             <input type="email" id="email" name="email" 
-                   value="<?php echo isset($_GET['email']) ? htmlspecialchars($_GET['email']) : ''; ?>" required><br><br>
-    
+                   value="<?php echo isset($_GET['email']) ? htmlspecialchars($_GET['email']) : ''; ?>" required>
         </div>
 
         <!-- Partie 2: Connexion ou Création de compte -->
         <div class="section">
             <h3>Connexion ou Création de Compte</h3>
+
             <p class="info-text">
                 Pour continuer votre réservation, vous devez vous connecter ou créer un compte.<br>
-                🔹 **Créer un compte vous permet de consulter l’historique de vos réservations !**
-            </p>
-            <p class="info-text">
-                Vous n'avez pas de compte ? creer le maintenant! <a href="signup_user.html">S'inscrire ici</a>
+                🔹 <strong>Créer un compte vous permet de consulter l’historique de vos réservations !</strong>
             </p>
 
             <p class="info-text">
-                Déjà un compte ? <a href="login_user.html">Connectez-vous ici</a>
+                Vous n'avez pas de compte ? <a href="signup_user.php?id_reservation=<?php echo $id_reservation ?>">S'inscrire ici</a>
+            </p>
+
+            <p class="info-text">
+                Déjà un compte ? <a href="login_user.html?id_reservation=<?php echo $id_reservation ?>">Connectez-vous ici</a>
             </p>
         </div>
 
+        <!-- Message d'avertissement -->
+        <?php if (!$isLoggedIn): ?>
+            <p class="warning">⚠️ Vous devez être connecté pour continuer la réservation.</p>
+        <?php endif; ?>
+
         <!-- Bouton de validation -->
-        <button type="submit">Continuer la réservation</button>
+        <button type="submit" <?php echo !$isLoggedIn ? 'disabled' : ''; ?>>Continuer la réservation</button>
+
     </form>
 </div>
 

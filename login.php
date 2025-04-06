@@ -44,8 +44,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $id_column = "id_agentf";
             break;
         case "gestionnaire_stock":
-            $table = "Gestionnaire_Stock";
+            $table = "Gestionnaire_Stock"; 
+
             $sql = "SELECT * FROM Gestionnaire_Stock WHERE email_gestionnaire = ? AND password_gest = ? ";
+
             $id_column = "id_gestionnaire";
             
             break;
@@ -63,11 +65,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Prepare and execute the statement
     $stmt = $conn->prepare($sql);
     if ($stmt) {
+
+        
         // Bind parameters (email and password, except where password is not applicable)
         if ($role == "employe" ) {
             $stmt->bind_param("s", $email); // Only email for tables without password
+
         } else {
-            $stmt->bind_param("ss", $email, $password); // Email and password
+            $stmt->bind_param("ss", $email, $password); // Email and password for other roles
         }
 
         $stmt->execute();

@@ -6,70 +6,138 @@ if (!isset($_SESSION['reservation_id'])) {
 }
 
 $reservationId = $_SESSION['reservation_id'];
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $serviceChoisi = $_POST['service'] ?? null;
+$conn = new mysqli('localhost', 'root', '', 'hotel');
 
-    if (!$serviceChoisi) {
-        die("<h1>Erreur : Aucun service sélectionné.</h1>");
-    }
+if ($conn->connect_error) {
+    die("<h1>Erreur : Connexion à la base de données échouée.</h1>");
+}
 
-    echo "<h1>Formulaire pour : $serviceChoisi</h1>";
-
-    // Afficher des champs spécifiques selon le service sélectionné
-    if ($serviceChoisi === 'Spa') {
-        echo "<form action='AjouterServiceRes.php' method='POST'>
-                <label for='date'>Choisissez une date :</label>
-                <input type='date' id='date' name='date' required><br><br>
-                <label for='prix'>Prix :</label>
-                <input type='text' id='prix' name='prix' value='200' readonly><br><br>
-                <input type='hidden' name='service' value='Spa'>
-                <button type='submit'>Inclure dans la reservation</button>
-              </form>";
-    } elseif ($serviceChoisi === 'Gym') {
-        echo "<form action='AjouterServiceRes.php' method='POST'>
-                <label for='prix'>Prix :</label>
-                <input type='text' id='prix' name='prix' value='100' readonly><br><br>
-                <input type='hidden' name='service' value='Gym'>
-                <button type='submit'>Inclure dans la reservation</button>
-              </form>";
-    } elseif ($serviceChoisi === 'Restauration') {
-        // Connexion à la base de données
-        $conn = new mysqli('localhost', 'root', '', 'tetravilla');
-        if ($conn->connect_error) {
-            die("<h1>Erreur : Connexion à la base de données échouée.</h1>");
+// Début du HTML + CSS
+echo "<!DOCTYPE html>
+<html lang='fr'>
+<head>
+    <meta charset='UTF-8'>
+    <title>Enregistrement des services</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
         }
 
-        // Récupérer les paquets disponibles pour la restauration
-        $sqlPaquets = "SELECT nomPaquet, prixPaquet, description FROM restauration";
-        $resultPaquets = $conn->query($sqlPaquets);
+        .message-container {
+            text-align: center;
+            padding: 50px;
+            margin: 100px auto;
+            width: 80%;
+            max-width: 600px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        }
 
-        echo "<form action='AjouterServiceRes.php' method='POST'>
-        <label for='paquet'>Choisissez un paquet :</label>
-        <select id='paquet' name='paquet' required>";
-while ($paquet = $resultPaquets->fetch_assoc()) {
-    echo "<option value='{$paquet['nomPaquet']}'>{$paquet['nomPaquet']} - {$paquet['prixPaquet']} DH</option>";
-}
-echo "</select><br><br>";
+        .message-container h2.success {
+            color: #4CAF50;
+        }
 
-// Repositionner le curseur pour relire les données
-$resultPaquets->data_seek(0); 
+        .message-container h2.error {
+            color: #f44336;
+        }
 
-// Afficher les descriptions de tous les paquets
-echo "<h2>Descriptions des Paquets Disponibles :</h2>";
-while ($paquet = $resultPaquets->fetch_assoc()) {
-    echo "<p><strong>{$paquet['nomPaquet']} :</strong> {$paquet['description']}</p>";
-}
+        .message-container p {
+            font-size: 18px;
+            margin: 20px 0;
+        }
 
-echo "<input type='hidden' name='service' value='Restauration'>
-      <button type='submit'>Inclure dans la reservation</button>
-      </form>";
+        .message-container a {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.3s ease;
+        }
 
+        .message-container a:hover {
+            background: #45a049;
+        }
 
-        $conn->close();
-    } else {
-        echo "<h1>Service non reconnu.</h1>";
+        .message-container a.back {
+            background: #f44336;
+        }
+
+        .message-container a.back:hover {
+            background: #d32f2f;
+        }
+    </style>
+</head>
+<body>";
+
+$conn->begin_transaction();
+
+try {
+    $queryRestauration = $conn->query("SELECT id_service FROM service WHERE type_service = 'restauration' LIMIT 1");
+    if (!$queryRestauration || $queryRestauration->num_rows == 0) {
+        throw new Exception("Le service de restauration est introuvable.");
     }
-} else {
-    die("<h1>Méthode non autorisée.</h1>");
+    $idRestauration = $queryRestauration->fetch_assoc()['id_service'];
+
+    if (isset($_POST['services']) && is_array($_POST['services'])) {
+        $insertService = $conn->prepare("INSERT INTO reservation_service (id_reservation, id_service) VALUES (?, ?)");
+        
+        foreach ($_POST['services'] as $idService) {
+            if ($idService == $idRestauration) continue;
+            
+            $insertService->bind_param("ii", $reservationId, $idService);
+            if (!$insertService->execute() && $conn->errno != 1062) {
+                throw new Exception("Erreur service ID $idService: " . $conn->error);
+            }
+        }
+        $insertService->close();
+    }
+
+    if (isset($_POST['paquets_restauration']) && is_array($_POST['paquets_restauration']) && count($_POST['paquets_restauration']) > 0) {
+        $insertRestauration = $conn->prepare("INSERT INTO reservation_service (id_reservation, id_service) VALUES (?, ?)");
+        $insertRestauration->bind_param("ii", $reservationId, $idRestauration);
+        if (!$insertRestauration->execute() && $conn->errno != 1062) {
+            throw new Exception("Erreur ajout service restauration: " . $conn->error);
+        }
+        $insertRestauration->close();
+
+        $insertPaquet = $conn->prepare("INSERT INTO reservation_paquet_restauration (reservation_id, paquet_restauration_id) VALUES (?, ?)");
+        
+        foreach ($_POST['paquets_restauration'] as $idPaquet) {
+            $insertPaquet->bind_param("ii", $reservationId, $idPaquet);
+            if (!$insertPaquet->execute() && $conn->errno != 1062) {
+                throw new Exception("Erreur paquet ID $idPaquet: " . $conn->error);
+            }
+        }
+        $insertPaquet->close();
+    }
+
+    $conn->commit();
+
+    echo "<div class='message-container'>";
+    echo "<h2 class='success'>Enregistrement réussi!</h2>";
+    echo "<p>Vos services ont bien été enregistrés.</p>";
+    echo "<a href='infospersonnels.php?id_reservation=$reservationId'>Valider</a>";
+    echo "</div>";
+
+    echo "<script>setTimeout(() => { window.location.href = 'infospersonnels.php?id_reservation=$reservationId'; }, 5000);</script>";
+
+} catch (Exception $e) {
+    $conn->rollback();
+    echo "<div class='message-container'>";
+    echo "<h2 class='error'>Erreur lors de l'enregistrement</h2>";
+    echo "<p>" . $e->getMessage() . "</p>";
+    echo "<a href='consultationServices.php' class='back'>Retour aux services</a>";
+    echo "</div>";
 }
+
+$conn->close();
+
+echo "</body></html>";
 ?>

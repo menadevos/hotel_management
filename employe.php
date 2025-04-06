@@ -438,7 +438,7 @@ $conn->close();
                         </select>
                         <label for="description">Description:</label>
                         <textarea name="description" required></textarea>
-                        <button type="submit" name="submit_demande" class="submit-btn">Créer Demande</button>
+                        <button type="submit" name="submit_demande" class="submit-btn">soumettre demande </button>
                     </form>
 
                     <h4>Demandes existantes:</h4>

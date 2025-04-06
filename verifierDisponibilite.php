@@ -8,7 +8,7 @@ try {
     }
 
     // Connexion à la base de données
-    $conn = new mysqli('localhost', 'root', '', 'tetravilla');
+    $conn = new mysqli('localhost', 'root', '', 'hotel');
     if ($conn->connect_error) {
         http_response_code(500);
         die("<h1>Erreur de connexion à la base de données</h1>");
