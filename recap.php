@@ -377,7 +377,7 @@ $total = $total_chambre + $total_services + $total_paquets;
                 <span class="info-value">
                     <ul style="margin: 0; padding-left: 20px;">
                         <?php foreach ($paquets as $paquet): ?>
-                            <li><?= htmlspecialchars($paquet['nom_paquet']) ?> - <?= htmlspecialchars($paquet['prix']) ?> MAD</li>
+                            <li><?= htmlspecialchars($paquet['nomPaquet']) ?> - <?= htmlspecialchars($paquet['prix']) ?> MAD</li>
                         <?php endforeach; ?>
                     </ul>
                     <strong>Total restauration: <?= $total_paquets ?> MAD</strong>
