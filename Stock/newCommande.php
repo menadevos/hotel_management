@@ -322,16 +322,16 @@ include("telecharger_recu_stock.php");
             font-weight: bold;
         }
         .btn-primary {
-            background-color: #4CAF50;
+            background-color: #8b1e3f;
         }
         .btn-primary:hover {
-            background-color: #45a049;
+            background-color: #8b1e3f;
         }
         .btn-paiement {
-            background-color: #2196F3;
+            background-color:#be9393;
         }
         .btn-paiement:hover {
-            background-color: #0b7dda;
+            background-color:#be9393;
         }
         .message {
             padding: 10px;

@@ -39,119 +39,88 @@ ob_start(); // Démarre la temporisation de sortie
     <link rel="stylesheet" href="css/dashboard.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
-        /* Modal styles */
-        #modal-gestionnaire {
-            display: none;
-            position: fixed;
-            top: 10%;
-            left: 50%;
-            transform: translate(-50%, 0);
-            background: white;
-            padding: 20px;
-            border: 1px solid #ccc;
-            z-index: 1000;
-            width: 400px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.2);
-            border-radius: 8px;
-        }
-        #modal-gestionnaire h3 {
-            margin-top: 0;
-        }
-        #modal-overlay {
-            display: none;
-            position: fixed;
-            top:0; left:0;
-            width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.4);
-            z-index: 999;
-        }
-        .admin-photo {
-            cursor: pointer;
-            border-radius: 50%;
-            width: 80px;
-            height: 80px;
-            object-fit: cover;
-        }
+      /* Nouveau style pour le modal profil */
+#modal-gestionnaire {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #f8d7da; /* rose clair */
+    width: 400px;
+    border-radius: 12px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    font-family: Arial, sans-serif;
+    border: 2px solid #711732;
+    overflow: hidden;
+    color: black;
+}
 
+#modal-gestionnaire .modal-header {
+    background-color: #711732;
+    color: white;
+    padding: 16px;
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+    position: relative;
+}
 
-       
-    /* MODAL DESIGN */
-    #modal-overlay {
-        display: none;
-        position: fixed;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        background: rgba(0, 0, 0, 0.4);
-        z-index: 999;
-    }
+#modal-gestionnaire .modal-body {
+    padding: 20px;
+    background-color: white;
+}
 
-    #modal-gestionnaire {
-        display: none;
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: #fff;
-        width: 350px;
-        border-radius: 12px;
-        box-shadow: 0 20px 30px rgba(0, 0, 0, 0.2);
-        z-index: 1000;
-        overflow: hidden;
-        font-family: Arial, sans-serif;
-    }
+#modal-gestionnaire .modal-body p {
+    margin: 12px 0;
+    font-size: 15px;
+    color: #333;
+}
 
-    #modal-gestionnaire .modal-header {
-        background-color: #1e90ff;
-        color: white;
-        padding: 16px;
-        font-size: 18px;
-        font-weight: bold;
-        text-align: center;
-    }
+#modal-gestionnaire .modal-body strong {
+    color: #711732;
+}
 
-    #modal-gestionnaire .modal-body {
-        padding: 20px;
-    }
+#modal-gestionnaire .modal-footer {
+    padding: 10px 20px;
+    background-color: #f8d7da;
+    text-align: right;
+    border-top: 1px solid #711732;
+}
 
-    #modal-gestionnaire .modal-body p {
-        margin: 10px 0;
-        font-size: 15px;
-        color: #333;
-    }
+#modal-gestionnaire .modal-footer button {
+    background-color: #711732;
+    color: white;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
 
-    #modal-gestionnaire .modal-body strong {
-        color: #555;
-    }
+#modal-gestionnaire .modal-footer button:hover {
+    background-color: black;
+}
 
-    #modal-gestionnaire .modal-footer {
-        padding: 10px 20px;
-        text-align: right;
-        background-color: #f9f9f9;
-        border-top: 1px solid #ddd;
-    }
+/* Overlay inchangé */
+#modal-overlay {
+    display: none;
+    position: fixed;
+    top:0; left:0;
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 999;
+}
 
-    #modal-gestionnaire .modal-footer button {
-        background-color: #1e90ff;
-        color: white;
-        padding: 8px 14px;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        transition: background-color 0.2s ease;
-    }
-
-    #modal-gestionnaire .modal-footer button:hover {
-        background-color: #0f6ec3;
-    }
-
-
-    .close-modal {
+.close-modal {
     position: absolute;
     top: 12px;
     right: 16px;
-    font-size: 20px;
+    font-size: 22px;
     cursor: pointer;
-    color: black ;
+    color: white;
     font-weight: bold;
     transition: color 0.2s ease;
 }
@@ -159,6 +128,7 @@ ob_start(); // Démarre la temporisation de sortie
 .close-modal:hover {
     color: #ccc;
 }
+
 
     </style>
 </head>
@@ -224,9 +194,7 @@ ob_start(); // Démarre la temporisation de sortie
             <p>Informations indisponibles.</p>
         <?php endif; ?>
     </div>
-    <div class="modal-footer">
-        <button onclick="closeModal()">Fermer</button>
-    </div>
+   
 </div>
     <script>
     const modal = document.getElementById('modal-gestionnaire');

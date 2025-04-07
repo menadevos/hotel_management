@@ -31,12 +31,22 @@ try {
     $fournisseurs = $stmtFournisseurs->fetchAll(PDO::FETCH_ASSOC);
     
     // Afficher le formulaire de filtrage
-    echo "<div style='margin: 20px 0; padding: 15px; background-color: #f5f5f5; border-radius: 5px;'>";
-    echo "<form method='get' action='dashboard_stock2.php' id='filtreForm'>";
-    echo "<input type='hidden' name='page' value='commandes'>";
-    echo "<input type='hidden' name='id' value='" . htmlspecialchars($id_gest) . "'>";
-    echo "<input type='hidden' name='type_stock' value='" . htmlspecialchars($type_stock) . "'>";
-    
+
+    echo "<div style='
+    margin: 20px 0;
+    padding: 20px;
+    background-color:#f2dede;
+    border-left: 6px solid #711732;
+    border-radius: 8px;
+    color: black;
+    font-family: Arial, sans-serif;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+'>";
+echo "<form method='get' action='dashboard_stock2.php' id='filtreForm'>";
+echo "<input type='hidden' name='page' value='commandes'>";
+echo "<input type='hidden' name='id' value='" . htmlspecialchars($id_gest) . "'>";
+echo "<input type='hidden' name='type_stock' value='" . htmlspecialchars($type_stock) . "'>";
+
     // Filtre par fournisseur
     echo "<div style='margin-bottom: 10px;'>";
     echo "<label for='fournisseur'><strong>Filtrer par fournisseur:</strong></label> ";
@@ -113,7 +123,7 @@ try {
             echo "<td>" . ($commande['date_livraison'] ? htmlspecialchars($commande['date_livraison']) : 'Non définie') . "</td>";
             echo "<td>" . htmlspecialchars($commande['email_fournisseur']) . "</td>";
             echo "<td>
-                    <button onclick='afficherDetails(" . htmlspecialchars($commande['id_comm']) . ")' style='padding: 5px 10px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;'>Voir détails</button>
+                    <button onclick='afficherDetails(" . htmlspecialchars($commande['id_comm']) . ")' style='padding: 5px 10px; background-color:#be9393; color: white; border: none; border-radius: 4px; cursor: pointer;'>Voir détails</button>
                   </td>";
             echo "</tr>";
         }
@@ -191,57 +201,58 @@ try {
         }
     }
 
-    // Stocker les détails de toutes les commandes dans des divs cachés
-    echo "<div id='details-container' style='display:none;'>";
-    foreach($commandesDetailsOrganises as $idComm => $commandeDetails) {
-        echo "<div id='details-" . htmlspecialchars($idComm) . "'>";
-        echo "<h3 style='color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px;'>Détails de la commande #" . htmlspecialchars($idComm) . "</h3>";
-        echo "<p><strong>État:</strong> " . htmlspecialchars($commandeDetails['infos']['etat']) . "</p>";
-        echo "<p><strong>Date commande:</strong> " . htmlspecialchars($commandeDetails['infos']['date_commande']) . "</p>";
-        echo "<p><strong>Date livraison:</strong> " . ($commandeDetails['infos']['date_livraison'] ? htmlspecialchars($commandeDetails['infos']['date_livraison']) : 'Non définie') . "</p>";
-        echo "<p><strong>Fournisseur:</strong> " . htmlspecialchars($commandeDetails['infos']['email_fournisseur']) . "</p>";
-        
-        // Afficher les produits commandés
-        if(!empty($commandeDetails['produits'])) {
-            echo "<h4 style='margin-top: 20px;'>Produits commandés:</h4>";
-            echo "<table border='1' style='border-collapse: collapse; width: 100%; margin-bottom: 20px;'>";
-            echo "<tr style='background-color: #f2f2f2;'>
-                    <th style='padding: 8px; text-align: left;'>Produit</th>
-                    <th style='padding: 8px; text-align: right;'>Prix unitaire</th>
-                    <th style='padding: 8px; text-align: center;'>Quantité</th>
-                    <th style='padding: 8px; text-align: right;'>Montant</th>
-                  </tr>";
-            
-            $totalCommande = 0;
-            
-            foreach($commandeDetails['produits'] as $produit) {
-                echo "<tr>";
-                echo "<td style='padding: 8px;'>" . htmlspecialchars($produit['nom_produit']) . "</td>";
-                echo "<td style='padding: 8px; text-align: right;'>" . number_format($produit['prix_produit'], 2, ',', ' ') . " €</td>";
-                echo "<td style='padding: 8px; text-align: center;'>" . htmlspecialchars($produit['qte_comm']) . "</td>";
-                echo "<td style='padding: 8px; text-align: right;'>" . number_format($produit['montant_ligne'], 2, ',', ' ') . " €</td>";
-                echo "</tr>";
-                
-                $totalCommande += $produit['montant_ligne'];
-            }
-            
-            echo "<tr style='font-weight:bold; background-color: #f9f9f9;'>";
-            echo "<td colspan='3' style='padding: 8px; text-align: right;'>Total commande:</td>";
-            echo "<td style='padding: 8px; text-align: right;'>" . number_format($totalCommande, 2, ',', ' ') . " €</td>";
-            echo "</tr>";
-            
-            echo "</table>";
-        } else {
-            echo "<p>Aucun produit dans cette commande.</p>";
-        }
-        
-        echo "</div>";
-    }
-    echo "</div>";
-
-} catch (PDOException $e) {
-    die("Erreur d'exécution de la requête: " . $e->getMessage());
-}
+     // Stocker les détails de toutes les commandes dans des divs cachés
+     echo "<div id='details-container' style='display:none;'>";
+     foreach($commandesDetailsOrganises as $idComm => $commandeDetails) {
+         echo "<div id='details-" . htmlspecialchars($idComm) . "'>";
+         
+         // SUPPRIMER LES INFORMATIONS DE COMMANDE (ne garder que les produits)
+         // echo "<h3 style='color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px;'>Détails de la commande #" . htmlspecialchars($idComm) . "</h3>";
+         // echo "<p><strong>État:</strong> " . htmlspecialchars($commandeDetails['infos']['etat']) . "</p>";
+         // echo "<p><strong>Date commande:</strong> " . htmlspecialchars($commandeDetails['infos']['date_commande']) . "</p>";
+         // echo "<p><strong>Date livraison:</strong> " . ($commandeDetails['infos']['date_livraison'] ? htmlspecialchars($commandeDetails['infos']['date_livraison']) : 'Non définie') . "</p>";
+         // echo "<p><strong>Fournisseur:</strong> " . htmlspecialchars($commandeDetails['infos']['email_fournisseur']) . "</p>";
+         
+         // Afficher UNIQUEMENT les produits commandés
+         if(!empty($commandeDetails['produits'])) {
+             echo "<table border='1' style='border-collapse: collapse; width: 100%; margin-bottom: 20px;'>";
+             echo "<tr style='background-color: #f2f2f2;'>
+                     <th style='padding: 8px; text-align: left;'>Produit</th>
+                     <th style='padding: 8px; text-align: right;'>Prix unitaire</th>
+                     <th style='padding: 8px; text-align: center;'>Quantité</th>
+                     <th style='padding: 8px; text-align: right;'>Montant</th>
+                   </tr>";
+             
+             $totalCommande = 0;
+             
+             foreach($commandeDetails['produits'] as $produit) {
+                 echo "<tr>";
+                 echo "<td style='padding: 8px;'>" . htmlspecialchars($produit['nom_produit']) . "</td>";
+                 echo "<td style='padding: 8px; text-align: right;'>" . number_format($produit['prix_produit'], 2, ',', ' ') . " €</td>";
+                 echo "<td style='padding: 8px; text-align: center;'>" . htmlspecialchars($produit['qte_comm']) . "</td>";
+                 echo "<td style='padding: 8px; text-align: right;'>" . number_format($produit['montant_ligne'], 2, ',', ' ') . " €</td>";
+                 echo "</tr>";
+                 
+                 $totalCommande += $produit['montant_ligne'];
+             }
+             
+             echo "<tr style='font-weight:bold; background-color: #f9f9f9;'>";
+             echo "<td colspan='3' style='padding: 8px; text-align: right;'>Total :</td>";
+             echo "<td style='padding: 8px; text-align: right;'>" . number_format($totalCommande, 2, ',', ' ') . " €</td>";
+             echo "</tr>";
+             
+             echo "</table>";
+         } else {
+             echo "<p>Aucun produit dans cette commande.</p>";
+         }
+         
+         echo "</div>";
+     }
+     echo "</div>";
+ 
+ } catch (PDOException $e) {
+     die("Erreur d'exécution de la requête: " . $e->getMessage());
+ }
 ?>
 
 <!-- Fenêtre modale stylisée -->

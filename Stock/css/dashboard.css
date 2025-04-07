@@ -38,6 +38,7 @@ body {
     text-align: center;
     margin-bottom: 30px;
 }
+
 .admin-photo {
     width: 100px;
     height: 100px;
@@ -146,7 +147,7 @@ table th, table td {
 
 /* Style pour les en-têtes */
 table th {
-    background-color: #070707;
+    background-color: #8b1e3f;
     color: white;
     font-weight: bold;
 }
@@ -175,7 +176,7 @@ table td {
     display: inline-block;
     padding: 10px 15px;
     margin-bottom: 15px;
-    background-color: #28a745;
+    background-color:#be9393 ; 
     color: white;
     text-decoration: none;
     border-radius: 5px;
@@ -185,7 +186,7 @@ table td {
     display: inline-block;
     padding: 5px 10px;
     margin-right: 5px;
-    background-color: #007bff;
+    background-color: #28a745;
     color: white;
     text-decoration: none;
     border-radius: 3px;
@@ -201,15 +202,15 @@ table td {
 }
 
 .btn-add:hover {
-    background-color: #218838;
+    background-color: #be9393;
 }
 
 .btn-edit:hover {
-    background-color: #0056b3;
+    background-color:#28a745;
 }
 
 .btn-delete:hover {
-    background-color: #c82333;
+    background-color: red;
 }
 
 .action-buttons {
@@ -395,7 +396,7 @@ table td {
     display: inline-block;
     padding: 10px 15px;
     margin-top: 10px;
-    background-color: #4CAF50;
+    background-color: #be9393;
     color: white;
     border: none;
     border-radius: 4px;
@@ -409,7 +410,7 @@ table td {
 }
 
 .btn-add:hover {
-    background-color: #45a049;
+    background-color: #be9393;
 }
 
 .btn-validate:hover {
