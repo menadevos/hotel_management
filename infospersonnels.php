@@ -153,7 +153,7 @@ if (!$id_reservation) {
             </p>
 
             <p class="info-text">
-                Déjà un compte ? <a href="login_user.html?id_reservation=<?php echo $id_reservation ?>">Connectez-vous ici</a>
+                Déjà un compte ? <a href="login_user.php?id_reservation=<?php echo $id_reservation ?>">Connectez-vous ici</a>
             </p>
         </div>
 

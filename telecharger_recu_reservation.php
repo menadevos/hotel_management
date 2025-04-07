@@ -61,7 +61,7 @@ $stmt_services->close();
 
 // 3. Récupération des paquets de restauration associés à la réservation
 $paquets = [];
-$sql_paquets = "SELECT pr.nom_paquet, pr.prix
+$sql_paquets = "SELECT pr.nomPaquet, pr.prix
                 FROM reservation_paquet_restauration rpr
                 JOIN paquet_restauration pr ON rpr.paquet_restauration_id = pr.id
                 WHERE rpr.reservation_id = ?";
@@ -185,7 +185,7 @@ try {
         foreach ($paquets as $paquet) {
             $prix_paquets += $paquet['prix'];
             $html .= '
-            <div class="item">- '.htmlspecialchars($paquet['nom_paquet']).': '.number_format($paquet['prix'], 2).' DH</div>';
+            <div class="item">- '.htmlspecialchars($paquet['nomPaquet']).': '.number_format($paquet['prix'], 2).' DH</div>';
         }
         
         $html .= '
