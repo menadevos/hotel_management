@@ -10,6 +10,33 @@ $filtre_fournisseur = isset($_GET['fournisseur']) ? $_GET['fournisseur'] : '';
 $filtre_etat = isset($_GET['etat']) ? $_GET['etat'] : '';
 $page = isset($_GET['page']) ? $_GET['page'] : '';
 
+// Traitement du formulaire de livraison
+if(isset($_POST['action']) && $_POST['action'] == 'marquer_livre') {
+    $id_commande = isset($_POST['id_commande']) ? $_POST['id_commande'] : '';
+    $date_livraison = isset($_POST['date_livraison']) ? $_POST['date_livraison'] : '';
+    
+    if(!empty($id_commande) && !empty($date_livraison)) {
+        try {
+            // Mise à jour de la commande
+            $sqlUpdate = "UPDATE commande 
+                          SET etat = 'Livrée', date_livraison = :date_livraison 
+                          WHERE id_comm = :id_commande";
+            
+            $stmtUpdate = $conn->prepare($sqlUpdate);
+            $stmtUpdate->bindParam(':date_livraison', $date_livraison, PDO::PARAM_STR);
+            $stmtUpdate->bindParam(':id_commande', $id_commande, PDO::PARAM_INT);
+            $stmtUpdate->execute();
+            
+            // Redirection pour éviter les soumissions multiples
+            header("Location: dashboard_stock2.php?page=commandes&id=" . $id_gest . "&type_stock=" . $type_stock . 
+                   "&fournisseur=" . $filtre_fournisseur . "&etat=" . $filtre_etat);
+            exit;
+        } catch (PDOException $e) {
+            echo "<div style='color:red;'>Erreur lors de la mise à jour: " . $e->getMessage() . "</div>";
+        }
+    }
+}
+
 // Vérifier que l'ID du gestionnaire est bien défini
 if(empty($id_gest)) {
     die("ID du gestionnaire non spécifié");
@@ -123,8 +150,14 @@ echo "<input type='hidden' name='type_stock' value='" . htmlspecialchars($type_s
             echo "<td>" . ($commande['date_livraison'] ? htmlspecialchars($commande['date_livraison']) : 'Non définie') . "</td>";
             echo "<td>" . htmlspecialchars($commande['email_fournisseur']) . "</td>";
             echo "<td>
-                    <button onclick='afficherDetails(" . htmlspecialchars($commande['id_comm']) . ")' style='padding: 5px 10px; background-color:#be9393; color: white; border: none; border-radius: 4px; cursor: pointer;'>Voir détails</button>
-                  </td>";
+                    <button onclick='afficherDetails(" . htmlspecialchars($commande['id_comm']) . ")' style='padding: 5px 10px; background-color:#be9393; color: white; border: none; border-radius: 4px; cursor: pointer;'>Voir détails</button>";
+            
+            // Ajout du bouton "Marquer comme livré" uniquement pour les commandes validées
+            if($commande['etat'] == 'Validée') {
+                echo " <button onclick='marquerCommelivre(" . htmlspecialchars($commande['id_comm']) . ")' style='margin-left: 5px; padding: 5px 10px; background-color:#6B8E23; color: white; border: none; border-radius: 4px; cursor: pointer;'>Marquer comme livré</button>";
+            }
+            
+            echo "</td>";
             echo "</tr>";
         }
     } else {
@@ -255,13 +288,33 @@ echo "<input type='hidden' name='type_stock' value='" . htmlspecialchars($type_s
  }
 ?>
 
-<!-- Fenêtre modale stylisée -->
+<!-- Fenêtre modale pour les détails -->
 <div id="modal-details" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color: rgba(0,0,0,0.5); z-index:1000;">
     <div style="position:relative; background-color:white; margin:5% auto; padding:20px; width:80%; max-width:800px; border-radius:5px; box-shadow:0 4px 8px rgba(0,0,0,0.1); max-height:80vh; overflow-y:auto;">
         <button onclick="document.getElementById('modal-details').style.display='none'" style="position:absolute; top:10px; right:10px; background:none; border:none; font-size:24px; cursor:pointer; color:#aaa;">&times;</button>
         <div id="modal-content">
             <!-- Les détails de la commande seront chargés ici -->
         </div>
+    </div>
+</div>
+
+<!-- Fenêtre modale pour marquer comme livré -->
+<div id="modal-livraison" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color: rgba(0,0,0,0.5); z-index:1000;">
+    <div style="position:relative; background-color:white; margin:15% auto; padding:20px; width:50%; max-width:500px; border-radius:5px; box-shadow:0 4px 8px rgba(0,0,0,0.1);">
+        <button onclick="document.getElementById('modal-livraison').style.display='none'" style="position:absolute; top:10px; right:10px; background:none; border:none; font-size:24px; cursor:pointer; color:#aaa;">&times;</button>
+        <h3>Marquer la commande comme livrée</h3>
+        <form id="form-livraison" method="post" action="">
+            <input type="hidden" name="action" value="marquer_livre">
+            <input type="hidden" name="id_commande" id="id_commande_livre">
+            <div style="margin-bottom: 15px;">
+                <label for="date_livraison"><strong>Date de livraison:</strong></label><br>
+                <input type="date" name="date_livraison" id="date_livraison" required style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            <div style="text-align: center;">
+                <button type="submit" style="padding: 8px 20px; background-color:#6B8E23; color: white; border: none; border-radius: 4px; cursor: pointer;">Confirmer</button>
+                <button type="button" onclick="document.getElementById('modal-livraison').style.display='none'" style="padding: 8px 20px; background-color:#999; color: white; border: none; border-radius: 4px; cursor: pointer; margin-left: 10px;">Annuler</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -278,11 +331,31 @@ function afficherDetails(idCommande) {
     document.getElementById('modal-details').style.display = 'block';
 }
 
-// Fermer la modale si on clique en dehors
+// Fonction pour afficher la modale de livraison
+function marquerCommelivre(idCommande) {
+    // Définir la date d'aujourd'hui comme valeur par défaut
+    var today = new Date();
+    var day = ('0' + today.getDate()).slice(-2);
+    var month = ('0' + (today.getMonth() + 1)).slice(-2);
+    var year = today.getFullYear();
+    var defaultDate = year + '-' + month + '-' + day;
+    
+    document.getElementById('date_livraison').value = defaultDate;
+    document.getElementById('id_commande_livre').value = idCommande;
+    document.getElementById('modal-livraison').style.display = 'block';
+}
+
+// Fermer les modales si on clique en dehors
 window.onclick = function(event) {
-    var modal = document.getElementById('modal-details');
-    if (event.target == modal) {
-        modal.style.display = "none";
+    var modalDetails = document.getElementById('modal-details');
+    var modalLivraison = document.getElementById('modal-livraison');
+    
+    if (event.target == modalDetails) {
+        modalDetails.style.display = "none";
+    }
+    
+    if (event.target == modalLivraison) {
+        modalLivraison.style.display = "none";
     }
 }
 </script>

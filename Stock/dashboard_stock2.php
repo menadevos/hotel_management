@@ -3,7 +3,7 @@
 session_start();
 require_once "connect_base.php";
 
-$page = isset($_GET['page']) ? $_GET['page'] : 'stock';
+$page = isset($_GET['page']) ? $_GET['page'] : ''; // Changé pour ne pas avoir de page par défaut
 $type_stock = isset($_GET['type_stock']) ? $_GET['type_stock'] : '';
 $id_gest = isset($_GET['id']) ? $_GET['id'] : '';
 
@@ -160,16 +160,21 @@ ob_start(); // Démarre la temporisation de sortie
         <div class="main-content">
             <?php 
             // Inclusion de la page demandée
-            $included_file = "$page.php";
-            if(file_exists($included_file)) {
-                // Passez les variables nécessaires
-                $_GET['type_stock'] = $type_stock;
-                $_GET['id'] = $id_gest;
-                
-                // Inclure le fichier
-                include $included_file;
+            if(!empty($page)) {
+                $included_file = "$page.php";
+                if(file_exists($included_file)) {
+                    // Passez les variables nécessaires
+                    $_GET['type_stock'] = $type_stock;
+                    $_GET['id'] = $id_gest;
+                    
+                    // Inclure le fichier
+                    include $included_file;
+                } else {
+                    echo "<p>Page non trouvée</p>";
+                }
             } else {
-                echo "<p>Page non trouvée</p>";
+                // Afficher un message d'accueil ou rien selon vos besoins
+                echo "<div class='welcome-message'><h1> Gestionnaire du stock Dashboard</h1></div>";
             }
             ?>
         </div>

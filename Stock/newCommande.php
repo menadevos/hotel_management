@@ -269,8 +269,8 @@ if(isset($_POST['proceder_paiement'])) {
         $_SESSION['pdf_id_facture'] = $id_facture;
         $_SESSION['pdf_id_transaction'] = $id_transaction;
         // SOLUTION: Ajoutez ces lignes pour réinitialiser complètement la commande
-    unset($_SESSION['commande']);
-    unset($_SESSION['id_fournisseur']);
+        unset($_SESSION['commande']);
+        unset($_SESSION['id_fournisseur']);
         
     } catch(Exception $e) {
         $conn->rollBack();
@@ -413,18 +413,40 @@ include("telecharger_recu_stock.php");
             </div>
         <?php endif; ?>
 
-
-
         <?php if($show_success && isset($_SESSION['pdf_id_facture']) && isset($_SESSION['pdf_id_transaction'])): ?>
-<div style="margin-top: 15px;">
-    <a href="dashboard_stock2.php?page=newCommande&type_stock=<?php echo urlencode($type_stock); ?>&id=<?php echo urlencode($id_gest); ?>&download_recu=1&id_facture=<?php echo $_SESSION['pdf_id_facture']; ?>&id_transaction=<?php echo $_SESSION['pdf_id_transaction']; ?>" class="btn-download" style="display: inline-block; text-decoration: none; padding: 10px 15px; color: white; background-color: #FF9800; border-radius: 4px;">Télécharger le reçu (PDF)</a>
-</div>
-<?php endif; ?>
+            <div style="margin-top: 15px; margin-bottom: 20px;">
+                <a href="dashboard_stock2.php?page=newCommande&type_stock=<?php echo urlencode($type_stock); ?>&id=<?php echo urlencode($id_gest); ?>&download_recu=1&id_facture=<?php echo $_SESSION['pdf_id_facture']; ?>&id_transaction=<?php echo $_SESSION['pdf_id_transaction']; ?>" class="btn-download" style="display: inline-block; text-decoration: none; padding: 10px 15px; color: white; background-color: #FF9800; border-radius: 4px;">Télécharger le reçu (PDF)</a>
+            </div>
+            
+            <!-- Ajout du formulaire de sélection de fournisseur après le message de succès -->
+            <h3>Nouvelle commande</h3>
+            <form method="post" action="">
+                <div class="form-group">
+                    <label for="fournisseur">Fournisseur:</label>
+                    <select name="fournisseur" id="fournisseur" required>
+                        <option value="">-- Sélectionnez un fournisseur --</option>
+                        <?php
+                        $sql = "SELECT id_fournisseur, nom_fournisseur, prenom_fournisseur, email 
+                                FROM fournisseur 
+                                WHERE categorie_fournit = :type_stock
+                                ORDER BY nom_fournisseur";
+                        $stmt = $conn->prepare($sql);
+                        $stmt->bindParam(':type_stock', $type_stock);
+                        $stmt->execute();
 
-
-
-
-        <?php if(!$show_facture): ?>
+                        while($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                            $nom_complet = htmlspecialchars($row['nom_fournisseur'] . ' ' . htmlspecialchars($row['prenom_fournisseur']));
+                            echo "<option value='{$row['id_fournisseur']}'>$nom_complet ({$row['email']})</option>";
+                        }
+                        ?>
+                    </select>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" name="select_fournisseur" class="btn-primary">Afficher les produits</button>
+                </div>
+            </form>
+        <?php elseif(!$show_facture): ?>
             <!-- Étape 1: Sélection du fournisseur -->
             <form method="post" action="">
                 <div class="form-group">
