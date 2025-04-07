@@ -46,7 +46,7 @@ $services_result = $stmt->get_result();
 $services = $services_result->fetch_all(MYSQLI_ASSOC);
 
 // Récupérer les paquets de restauration
-$paquets_query = "SELECT pr.nom_paquet, pr.prix 
+$paquets_query = "SELECT pr.nomPaquet, pr.prix 
                   FROM reservation_paquet_restauration rpr
                   JOIN paquet_restauration pr ON rpr.paquet_restauration_id = pr.id
                   WHERE rpr.reservation_id = ?";

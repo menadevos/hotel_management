@@ -145,7 +145,7 @@ if ($conn->connect_error) {
                     echo "<p><strong>Prix :</strong> {$service['prix']} DH</p>";
                     echo "<label><input type='checkbox' name='services[]' value='{$service['id_service']}'> Sélectionner ce service</label>";
                 } else {
-                    $sqlPaquets = "SELECT id, nom_paquet, description, prix FROM paquet_restauration";
+                    $sqlPaquets = "SELECT id, nomPaquet, description, prix FROM paquet_restauration";
                     $resultPaquets = $conn->query($sqlPaquets);
 
                     if ($resultPaquets && $resultPaquets->num_rows > 0) {
@@ -154,7 +154,7 @@ if ($conn->connect_error) {
                         while ($paquet = $resultPaquets->fetch_assoc()) {
                             echo "<label>";
                             echo "<input type='checkbox' name='paquets_restauration[]' value='{$paquet['id']}'>";
-                            echo "<div><strong>{$paquet['nom_paquet']}</strong> - {$paquet['prix']} DH<br><small>{$paquet['description']}</small></div>";
+                            echo "<div><strong>{$paquet['nomPaquet']}</strong> - {$paquet['prix']} DH<br><small>{$paquet['description']}</small></div>";
                             echo "</label>";
                         }
 
