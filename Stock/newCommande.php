@@ -228,6 +228,10 @@ if(isset($_POST['proceder_paiement'])) {
         $stmt = $conn->prepare("UPDATE facture SET statut = 'Payée', id_transaction = ? WHERE id_fac = ?");
         $stmt->execute([$id_transaction, $id_facture]);
         
+        // ✅ Mettre à jour la commande comme validée
+        $stmt = $conn->prepare("UPDATE commande SET etat = 'Validée' WHERE id_comm = ?");
+        $stmt->execute([$id_commande]); 
+
         // 4. Mettre à jour le budget
         $nouveau_budget = $monnaie_stock - $montant_total;
         $stmt = $conn->prepare("UPDATE gestionnaire_stock SET monnaiestock = ? WHERE id_gestionnaire = ? AND type_stock = ?");

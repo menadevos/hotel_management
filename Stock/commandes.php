@@ -6,6 +6,9 @@ error_reporting(E_ALL);
 // Récupération des paramètres de l'URL
 $type_stock = isset($_GET['type_stock']) ? $_GET['type_stock'] : '';
 $id_gest = isset($_GET['id']) ? $_GET['id'] : '';
+$filtre_fournisseur = isset($_GET['fournisseur']) ? $_GET['fournisseur'] : '';
+$filtre_etat = isset($_GET['etat']) ? $_GET['etat'] : '';
+$page = isset($_GET['page']) ? $_GET['page'] : '';
 
 // Vérifier que l'ID du gestionnaire est bien défini
 if(empty($id_gest)) {
@@ -16,16 +19,77 @@ echo "<h1>Page des commandes</h1>";
 
 // Connexion à la base de données déjà établie dans connect_base.php (utilisant PDO)
 
-// Requête pour récupérer les commandes du gestionnaire spécifique
-$sql = "SELECT c.*, f.email AS email_fournisseur 
-        FROM commande c 
-        LEFT JOIN fournisseur f ON c.id_fournisseur = f.id_fournisseur 
-        WHERE c.id_gestionnaire_stock = :id_gest
-        ORDER BY c.date_commande DESC";
+// Récupérer la liste des fournisseurs selon le type_stock
+$sqlFournisseurs = "SELECT id_fournisseur, email 
+                    FROM fournisseur 
+                    WHERE categorie_fournit = :type_stock";
 
 try {
+    $stmtFournisseurs = $conn->prepare($sqlFournisseurs);
+    $stmtFournisseurs->bindParam(':type_stock', $type_stock, PDO::PARAM_STR);
+    $stmtFournisseurs->execute();
+    $fournisseurs = $stmtFournisseurs->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Afficher le formulaire de filtrage
+    echo "<div style='margin: 20px 0; padding: 15px; background-color: #f5f5f5; border-radius: 5px;'>";
+    echo "<form method='get' action='dashboard_stock2.php' id='filtreForm'>";
+    echo "<input type='hidden' name='page' value='commandes'>";
+    echo "<input type='hidden' name='id' value='" . htmlspecialchars($id_gest) . "'>";
+    echo "<input type='hidden' name='type_stock' value='" . htmlspecialchars($type_stock) . "'>";
+    
+    // Filtre par fournisseur
+    echo "<div style='margin-bottom: 10px;'>";
+    echo "<label for='fournisseur'><strong>Filtrer par fournisseur:</strong></label> ";
+    echo "<select name='fournisseur' id='fournisseur' style='padding: 5px;' onchange='this.form.submit()'>";
+    echo "<option value=''>Tous les fournisseurs</option>";
+    
+    foreach($fournisseurs as $fournisseur) {
+        $selected = ($filtre_fournisseur == $fournisseur['id_fournisseur']) ? 'selected' : '';
+        echo "<option value='" . htmlspecialchars($fournisseur['id_fournisseur']) . "' $selected>" . htmlspecialchars($fournisseur['email']) . "</option>";
+    }
+    
+    echo "</select> ";
+    
+    // Filtre par état
+    echo "<label for='etat' style='margin-left: 20px;'><strong>Filtrer par état:</strong></label> ";
+    echo "<select name='etat' id='etat' style='padding: 5px;' onchange='this.form.submit()'>";
+    echo "<option value=''>Tous les états</option>";
+    echo "<option value='En attente'" . ($filtre_etat == 'En attente' ? ' selected' : '') . ">En attente</option>";
+    echo "<option value='Validée'" . ($filtre_etat == 'Validée' ? ' selected' : '') . ">Validée</option>";
+    echo "<option value='Livrée'" . ($filtre_etat == 'Livrée' ? ' selected' : '') . ">Livrée</option>";
+    echo "</select>";
+    echo "</div>";
+    echo "</form>";
+    echo "</div>";
+
+    // Construction de la requête SQL avec les filtres
+    $sql = "SELECT c.*, f.email AS email_fournisseur 
+            FROM commande c 
+            LEFT JOIN fournisseur f ON c.id_fournisseur = f.id_fournisseur 
+            WHERE c.id_gestionnaire_stock = :id_gest";
+    
+    // Ajouter les conditions de filtrage
+    if(!empty($filtre_fournisseur)) {
+        $sql .= " AND c.id_fournisseur = :filtre_fournisseur";
+    }
+    
+    if(!empty($filtre_etat)) {
+        $sql .= " AND c.etat = :filtre_etat";
+    }
+    
+    $sql .= " ORDER BY c.date_commande DESC";
+
     $stmt = $conn->prepare($sql);
     $stmt->bindParam(':id_gest', $id_gest, PDO::PARAM_INT);
+    
+    if(!empty($filtre_fournisseur)) {
+        $stmt->bindParam(':filtre_fournisseur', $filtre_fournisseur, PDO::PARAM_INT);
+    }
+    
+    if(!empty($filtre_etat)) {
+        $stmt->bindParam(':filtre_etat', $filtre_etat, PDO::PARAM_STR);
+    }
+    
     $stmt->execute();
     $commandes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -40,22 +104,26 @@ try {
             <th>Actions</th>
           </tr>";
 
-    foreach($commandes as $commande) {
-        echo "<tr>";
-        echo "<td>" . htmlspecialchars($commande['id_comm']) . "</td>";
-        echo "<td>" . htmlspecialchars($commande['etat']) . "</td>";
-        echo "<td>" . htmlspecialchars($commande['date_commande']) . "</td>";
-        echo "<td>" . ($commande['date_livraison'] ? htmlspecialchars($commande['date_livraison']) : 'Non définie') . "</td>";
-        echo "<td>" . htmlspecialchars($commande['email_fournisseur']) . "</td>";
-        echo "<td>
-                <button onclick='afficherDetails(" . htmlspecialchars($commande['id_comm']) . ")' style='padding: 5px 10px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;'>Voir détails</button>
-              </td>";
-        echo "</tr>";
+    if(count($commandes) > 0) {
+        foreach($commandes as $commande) {
+            echo "<tr>";
+            echo "<td>" . htmlspecialchars($commande['id_comm']) . "</td>";
+            echo "<td>" . htmlspecialchars($commande['etat']) . "</td>";
+            echo "<td>" . htmlspecialchars($commande['date_commande']) . "</td>";
+            echo "<td>" . ($commande['date_livraison'] ? htmlspecialchars($commande['date_livraison']) : 'Non définie') . "</td>";
+            echo "<td>" . htmlspecialchars($commande['email_fournisseur']) . "</td>";
+            echo "<td>
+                    <button onclick='afficherDetails(" . htmlspecialchars($commande['id_comm']) . ")' style='padding: 5px 10px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;'>Voir détails</button>
+                  </td>";
+            echo "</tr>";
+        }
+    } else {
+        echo "<tr><td colspan='6' style='text-align: center; padding: 20px;'>Aucune commande ne correspond aux critères de filtrage.</td></tr>";
     }
 
     echo "</table>";
 
-    // Préparation de la requête pour les détails des commandes
+    // Construction de la requête pour les détails avec les mêmes filtres
     $sqlDetails = "SELECT 
                     c.*, 
                     f.email AS email_fournisseur,
@@ -68,11 +136,30 @@ try {
                   LEFT JOIN fournisseur f ON c.id_fournisseur = f.id_fournisseur
                   LEFT JOIN ligne_commande lc ON c.id_comm = lc.id_commande
                   LEFT JOIN produit p ON lc.id_produit = p.id_produit
-                  WHERE c.id_gestionnaire_stock = :id_gest
-                  ORDER BY c.date_commande DESC";
+                  WHERE c.id_gestionnaire_stock = :id_gest";
+
+    // Ajouter les conditions de filtrage
+    if(!empty($filtre_fournisseur)) {
+        $sqlDetails .= " AND c.id_fournisseur = :filtre_fournisseur";
+    }
+    
+    if(!empty($filtre_etat)) {
+        $sqlDetails .= " AND c.etat = :filtre_etat";
+    }
+    
+    $sqlDetails .= " ORDER BY c.date_commande DESC";
 
     $stmtDetails = $conn->prepare($sqlDetails);
     $stmtDetails->bindParam(':id_gest', $id_gest, PDO::PARAM_INT);
+    
+    if(!empty($filtre_fournisseur)) {
+        $stmtDetails->bindParam(':filtre_fournisseur', $filtre_fournisseur, PDO::PARAM_INT);
+    }
+    
+    if(!empty($filtre_etat)) {
+        $stmtDetails->bindParam(':filtre_etat', $filtre_etat, PDO::PARAM_STR);
+    }
+    
     $stmtDetails->execute();
     $detailsCommandes = $stmtDetails->fetchAll(PDO::FETCH_ASSOC);
 
