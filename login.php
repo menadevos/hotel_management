@@ -7,7 +7,7 @@ $host = "localhost"; // Replace with your host if different
 $username = "root";  // Replace with your MySQL username
 $password = "";      // Replace with your MySQL password
 $dbname = "hotel";   // Database name
-$port = 4306;         // Port que tu utilises maintenant
+$port = 3306;         // Port que tu utilises maintenant
 // Create connection
 $conn = new mysqli($host, $username, $password, $dbname , $port);
 
@@ -171,7 +171,6 @@ $conn->close();
                 <button type="submit" class="login-btn">Login</button>
             </form>
 
-            <p class="register-link">Not Registered Yet? <a href="signup.html">Create an account</a></p>
         </div>
     </div>
 </body>
